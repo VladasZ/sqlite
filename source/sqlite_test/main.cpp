@@ -4,6 +4,7 @@
 int main() {
 
     Info("Spes");
+
     return 0;
 }
 

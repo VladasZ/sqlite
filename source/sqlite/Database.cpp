@@ -1,33 +1,15 @@
 //
-//  Sprite.hpp
-//  sprites
+//  Database.cpp
+//  sqlite
 //
-//  Created by Vladas Zakrevskis on 7/8/19.
+//  Created by Vladas Zakrevskis on 8/27/19.
 //  Copyright © 2019 VladasZ. All rights reserved.
 //
 
-#include "Sprite.hpp"
-#include "Sprites.hpp"
+#include "Database.hpp"
 
-using namespace gm;
-using namespace sprites;
+using namespace sql;
 
-Sprite::Sprite(Image* image) : _image(image) {
+Database::Database(const std::string &path) {
 
-}
-
-Sprite::~Sprite() {
-
-}
-
-Image* Sprite::image() const {
-	return _image;
-}
-
-void Sprite::update() {
-	position += velocity;
-}
-
-void Sprite::draw() {
-	config::drawer()->draw(this);
 }

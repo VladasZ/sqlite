@@ -1,17 +1,25 @@
 //
-//  Sprites.hpp
-//  sprites
+//  Database.hpp
+//  sqlite
 //
-//  Created by Vladas Zakrevskis on 7/25/19.
+//  Created by Vladas Zakrevskis on 8/27/19.
 //  Copyright © 2019 VladasZ. All rights reserved.
 //
 
 #pragma once
 
-#include "Sprite.hpp"
-#include "SpriteDrawer.hpp"
+#include <string>
 
-namespace sprites::config {
-	void set_drawer(SpriteDrawer*);
-	SpriteDrawer* drawer();
+namespace sql {
+
+    class Database {
+
+        
+
+    public:
+
+        Database(const std::string& path);
+
+    };
+
 }
