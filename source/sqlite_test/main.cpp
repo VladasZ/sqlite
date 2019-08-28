@@ -1,9 +1,13 @@
 
 #include "Log.hpp"
 
+#include "Database.hpp"
+
 #include "sqlite3.h"
 
-#include "mappable.hpp"
+#include "Mappable.hpp"
+
+using namespace mapping;
 
 class TestObject : public Mappable<TestObject> {
 
@@ -19,18 +23,26 @@ public:
         );
     }
 
+    static std::string class_name() {
+        return "TestObject";
+    }
+
 };
 
 int main() {
 
-    Info("Spes");
+    sql::Database base("spees");
 
-    Logvar(sqlite3_threadsafe());
+    Logvar(mapping::is_mappable<TestObject>);
+
+    base.register_class<TestObject>();
 
 
     TestObject spes;
 
-    Info(TestObject::to_json_string(TestObject::parse_string(TestObject::to_json_string(spes))));
+    Info(TestObject::to_json(TestObject::parse(TestObject::to_json(spes))));
+
+    TestObject::print_properties();
 
     return 0;
 }

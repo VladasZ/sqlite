@@ -12,6 +12,8 @@
 
 #include "sqlite3.h"
 
+#include "Mappable.hpp"
+
 namespace sql {
 
     class Database {
@@ -26,6 +28,19 @@ namespace sql {
 
         void execute_command(const std::string& command);
 
+        template<class Class>
+        void register_class();
+
     };
+
+
+    template<class Class>
+    void Database::register_class() {
+        static_assert(mapping::is_mappable<Class>,
+                "Registering class must be derived from mapping::Mappable<T> class");
+
+        Logvar(Class::class_name());
+
+    }
 
 }
