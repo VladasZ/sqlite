@@ -3,8 +3,6 @@
 #include <iostream>
 #include <map>
 
-#include "meta.hpp"
-
 template<class _ClassType, class _MemberType>
 class Property {
 public:
