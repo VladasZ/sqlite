@@ -10,15 +10,21 @@
 
 #include <string>
 
+#include "sqlite3.h"
+
 namespace sql {
 
     class Database {
 
-        
+        std::string _path;
+        sqlite3* _handle = nullptr;
 
     public:
 
         Database(const std::string& path);
+        ~Database();
+
+        void execute_command(const std::string& command);
 
     };
 
