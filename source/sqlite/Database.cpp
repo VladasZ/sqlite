@@ -23,7 +23,27 @@ Database::~Database() {
         sqlite3_close(_handle);
 }
 
-void Database::execute_command(const std::string& command) {
+void Database::_execute_command(const std::string& command) {
     char* error;
-    sqlite3_exec(_handle, command.c_str(), 0, 0, &error);
+    if (sqlite3_exec(_handle, command.c_str(), 0, 0, &error)) {
+        Error(error);
+        sqlite3_free(error);
+    }
+    else {
+        Info("sucess");
+        Info(command);
+    }
+}
+
+sqlite3_stmt* Database::_compile_command(const std::string& command) {
+
+    sqlite3_stmt* result;
+
+    if (sqlite3_prepare_v3(_handle, command.c_str(), -1, 0, &result, nullptr)) {
+        Error(sqlite3_errmsg(_handle));
+        sqlite3_finalize(result);
+        return nullptr;
+    }
+
+    return result;
 }
