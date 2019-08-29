@@ -38,8 +38,7 @@ int main() {
 
     Info(TestObject::parse(seeee.to_json()).to_json());
 
-
-    auto result = base.get_all<TestObject>();
+    Info(TestObject::array_to_json(base.get_all<TestObject>()));
 
     return 0;
 }

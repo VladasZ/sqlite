@@ -12,9 +12,15 @@
 
 #include "sqlite3.h"
 
+#include "boost/core/demangle.hpp"
+
 #include "Mappable.hpp"
 
+using namespace boost::core;
+
 namespace sql {
+
+    std::string sqlite3_column_string(sqlite3_stmt*, int column);
 
     class Database {
 
@@ -39,6 +45,15 @@ namespace sql {
         void _execute_command(const std::string& command);
         sqlite3_stmt* _compile_command(const std::string& command);
 
+        template<class Property>
+        auto _extract_function(std::enable_if_t<Property::is_string>* = nullptr)  { return sqlite3_column_string; }
+
+        template<class Property>
+        auto _extract_function(std::enable_if_t<Property::is_float>* = nullptr)   { return sqlite3_column_double; }
+
+        template<class Property>
+        auto _extract_function(std::enable_if_t<Property::is_integer>* = nullptr) { return sqlite3_column_int; }
+
         template<class T>
         void _register_class();
 
@@ -62,11 +77,26 @@ namespace sql {
     template<class T>
     std::vector<T> Database::get_all() {
 
-        std::string command = "SELECT * from " + T::class_name() + ";";
+        auto stmt = _compile_command("SELECT * from " + T::class_name() + ";");
 
-        Info(command);
+        int code = 0;
 
-        return { };
+        std::vector<T> result;
+
+        while ((code = sqlite3_step(stmt)) == SQLITE_ROW) {
+            T object;
+            unsigned index = 0;
+            T::iterate_properties([&](auto property) {
+                object.*property.pointer = _extract_function<decltype(property)>()(stmt, index++);
+            });
+            result.push_back(object);
+        }
+
+        if (code != SQLITE_DONE) {
+            Error(sqlite3_errmsg(_handle));
+        }
+
+        return result;
     }
 
     template<class T>
