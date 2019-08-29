@@ -13,13 +13,15 @@ class TestObject : public Mappable<TestObject> {
 
 public:
 
-    int spes = 1;
-    std::string rgles = "orob";
+    int age = 0;
+    std::string name = "";
+    std::string last_name = "";
 
     static auto properties() {
         return std::make_tuple(
-                PROPERTY(spes, 5),
-                PROPERTY(rgles, "astank")
+                PROPERTY(age),
+                PROPERTY(name),
+                PROPERTY(last_name)
         );
     }
 
@@ -31,14 +33,17 @@ public:
 
 int main() {
 
-    sql::Database base("spees");
+    sql::Database base("spees2");
 
     TestObject seeee;
 
+    seeee.age = 100;
+    seeee.name = "pikul";
+    seeee.last_name = "spesel";
 
-    Info(TestObject::parse(seeee.to_json()).to_json());
+    base.add(seeee);
 
-    Info(TestObject::array_to_json(base.get_all<TestObject>()));
+    Info(base.dump_all<TestObject>());
 
     return 0;
 }
