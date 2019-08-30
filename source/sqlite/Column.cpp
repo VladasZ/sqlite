@@ -15,7 +15,7 @@ static std::string sqlite3_column_string(sqlite3_stmt* stmt, unsigned column) {
     return reinterpret_cast<const char*>(sqlite3_column_text(stmt, column));
 }
 
-Column::Column(unsigned index, sqlite3_stmt* stmt, const std::string& name) : _index(index), _stmt(stmt), _name(name) {
+Column::Column(unsigned index, const std::string& name) : _index(index), _name(name) {
 
 }
 

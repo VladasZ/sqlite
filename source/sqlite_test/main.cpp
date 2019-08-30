@@ -53,6 +53,10 @@ int main() {
         cout << name << " " << col.to_string() << endl;
     }
 
+    Info(base.dump_all<TestObject>());
+
+    Info(TestObject::array_to_json(base.get_all<TestObject>()));
+
     return 0;
 }
 

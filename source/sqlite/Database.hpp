@@ -80,12 +80,15 @@ namespace sql {
 
         std::vector<T> result;
 
+        auto columns = _columns<T>();
+
         _get_rows(T::select_command(), [&](auto stmt) {
             T object;
-            unsigned index = 0;
             T::iterate_properties([&](auto property) {
-                Info(sqlite3_column_name(stmt, index));
-                //  sqlite3_column_count()
+                if (columns.find(property.name) == columns.end()) {
+                    Fatal("Invalid table for: " << T::class_name() << " missing property: " << property.name);
+                }
+                columns[property.name].set_property(object, property, stmt);
             });
             result.push_back(object);
         });
@@ -97,16 +100,15 @@ namespace sql {
     std::string Database::dump_all() {
         std::string result;
 
+        _get_rows(T::select_command(), [&](auto stmt) {
 
-//        _get_rows(T::select_command(), [&](auto stmt) {
-//
-//            for (unsigned i = 0; i < sqlite3_data_count(stmt); i++) {
-//
-//                result += std::string() +
-//                          sqlite3_column_name(stmt, i) + " : " +
-//                          sqlite3_column_string(stmt, i) + "\n";
-//            }
-//        });
+            for (unsigned i = 0; i < sqlite3_data_count(stmt); i++) {
+
+                result += std::string() +
+                          sqlite3_column_name(stmt, i) + " : " +
+                          reinterpret_cast<const char*>(sqlite3_column_text(stmt, i)) + "\n";
+            }
+        });
 
         return result;
     }
@@ -119,8 +121,10 @@ namespace sql {
 
         for (unsigned i = 0; i < sqlite3_column_count(stmt); i++) {
             auto name = sqlite3_column_name(stmt, i);
-            result[name] = Column(i, stmt, name);
+            result[name] = Column(i, name);
         }
+
+        sqlite3_finalize(stmt);
 
         return result;
     }
