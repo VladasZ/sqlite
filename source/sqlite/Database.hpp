@@ -14,13 +14,12 @@
 
 #include "boost/core/demangle.hpp"
 
+#include "Column.hpp"
 #include "Mappable.hpp"
 
 using namespace boost::core;
 
 namespace sql {
-
-    std::string sqlite3_column_string(sqlite3_stmt*, int column);
 
     class Database {
 
@@ -44,42 +43,22 @@ namespace sql {
         std::string dump_all();
 
     private:
+    public:
 
         void _execute_command(const std::string& command);
         sqlite3_stmt* _compile_command(const std::string& command);
         void _get_rows(const std::string& command, std::function<void(sqlite3_stmt*)> row);
 
         template<class T>
+        std::map<std::string, Column> _columns();
+
+        template<class T>
         unsigned _rows_count();
-
-        template<class Property>
-        auto _extract_function(std::enable_if_t<Property::is_string>* = nullptr)  { return sqlite3_column_string; }
-
-        template<class Property>
-        auto _extract_function(std::enable_if_t<Property::is_float>* = nullptr)   { return sqlite3_column_double; }
-
-        template<class Property>
-        auto _extract_function(std::enable_if_t<Property::is_integer>* = nullptr) { return sqlite3_column_int; }
 
         template<class T>
         void _register_class();
 
     };
-
-    template<class T>
-    unsigned Database::_rows_count() {
-        unsigned count;
-        std::string command = "select count(*) from " + T::class_name();
-
-        auto callback = [](auto count, auto, auto argv, auto) {
-            *static_cast<int*>(count) = atoi(argv[0]);
-            return 0;
-        };
-
-        sqlite3_exec(_handle, command.c_str(), callback, &count, nullptr);
-        return count;
-    }
-
 
     template<class T>
     void Database::add(const T& object) {
@@ -106,7 +85,7 @@ namespace sql {
             unsigned index = 0;
             T::iterate_properties([&](auto property) {
                 Info(sqlite3_column_name(stmt, index));
-                object.*property.pointer = _extract_function<decltype(property)>()(stmt, index++);
+                //  sqlite3_column_count()
             });
             result.push_back(object);
         });
@@ -119,17 +98,45 @@ namespace sql {
         std::string result;
 
 
-        _get_rows(T::select_command(), [&](auto stmt) {
-
-            for (unsigned i = 0; i < sqlite3_data_count(stmt); i++) {
-
-                result += std::string() +
-                        sqlite3_column_name(stmt, i) + " : " +
-                        sqlite3_column_string(stmt, i) + "\n";
-            }
-        });
+//        _get_rows(T::select_command(), [&](auto stmt) {
+//
+//            for (unsigned i = 0; i < sqlite3_data_count(stmt); i++) {
+//
+//                result += std::string() +
+//                          sqlite3_column_name(stmt, i) + " : " +
+//                          sqlite3_column_string(stmt, i) + "\n";
+//            }
+//        });
 
         return result;
+    }
+
+    template<class T>
+    std::map<std::string, Column> Database::_columns() {
+        auto stmt = _compile_command(T::select_command());
+
+        std::map<std::string, Column> result;
+
+        for (unsigned i = 0; i < sqlite3_column_count(stmt); i++) {
+            auto name = sqlite3_column_name(stmt, i);
+            result[name] = Column(i, stmt, name);
+        }
+
+        return result;
+    }
+
+    template<class T>
+    unsigned Database::_rows_count() {
+        unsigned count;
+        std::string command = "select count(*) from " + T::class_name();
+
+        auto callback = [](auto count, auto, auto argv, auto) {
+            *static_cast<int*>(count) = atoi(argv[0]);
+            return 0;
+        };
+
+        sqlite3_exec(_handle, command.c_str(), callback, &count, nullptr);
+        return count;
     }
 
     template<class T>

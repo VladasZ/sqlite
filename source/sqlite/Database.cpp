@@ -12,10 +12,6 @@
 using namespace sql;
 using namespace std;
 
-std::string sql::sqlite3_column_string(sqlite3_stmt* stmt, int column) {
-    return reinterpret_cast<const char*>(sqlite3_column_text(stmt, column));
-}
-
 Database::Database(const string& path) : _path(path) {
     if (sqlite3_open(path.c_str(), &_handle)) {
         Fatal(sqlite3_errmsg(_handle))

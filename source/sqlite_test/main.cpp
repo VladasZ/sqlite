@@ -7,7 +7,9 @@
 
 #include "Mappable.hpp"
 
+using namespace std;
 using namespace mapping;
+using namespace sql;
 
 class TestObject : public Mappable<TestObject> {
 
@@ -41,9 +43,15 @@ int main() {
     seeee.name = "pikul";
     seeee.last_name = "spesel";
 
-    base.add(seeee);
+    // base.add(seeee);
 
-    Info(base.dump_all<TestObject>());
+    // Info(base.dump_all<TestObject>());
+
+    auto cols = base._columns<TestObject>();
+
+    for (auto [name, col] : cols) {
+        cout << name << " " << col.to_string() << endl;
+    }
 
     return 0;
 }
