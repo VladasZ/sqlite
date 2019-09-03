@@ -12,6 +12,7 @@
 
 #include "sqlite3.h"
 
+#include "Value.hpp"
 #include "Result.hpp"
 #include "Column.hpp"
 #include "Mappable.hpp"
@@ -100,7 +101,11 @@ namespace sql {
     T Database::where(std::function<void(T&)> edit) {
         auto object = T::empty();
         edit(object);
-        Info(object.edited_field());
+        auto field_name = object.edited_field();
+
+        Info(object.template get<mapping::Value>(field_name).to_string());
+
+        return object;
     }
 
     template<class T>
