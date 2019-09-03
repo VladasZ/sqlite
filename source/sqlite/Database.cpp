@@ -30,8 +30,8 @@ void Database::_execute_command(const std::string& command) {
         sqlite3_free(error);
     }
     else {
-        Info("sucess");
-        Info(command);
+        Log("sucess");
+        Log(command);
     }
 }
 

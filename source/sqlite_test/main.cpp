@@ -45,7 +45,7 @@ int main() {
 
     // base.add(seeee);
 
-    // Info(base.dump_all<TestObject>());
+    // Log(base.dump_all<TestObject>());
 
     auto cols = base._columns<TestObject>();
 
@@ -53,9 +53,9 @@ int main() {
         cout << name << " " << col.to_string() << endl;
     }
 
-    Info(base.dump_all<TestObject>());
+    Log(base.dump_all<TestObject>());
 
-    Info(TestObject::array_to_json(base.get_all<TestObject>()));
+    Log(TestObject::array_to_json(base.get_all<TestObject>()));
 
     return 0;
 }
