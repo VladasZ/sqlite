@@ -26,7 +26,7 @@ Database::~Database() {
 void Database::_execute_command(const std::string& command) {
     char* error;
     if (sqlite3_exec(_handle, command.c_str(), 0, 0, &error)) {
-        Error(error);
+        _Error(error);
         sqlite3_free(error);
     }
     else {
@@ -40,7 +40,7 @@ sqlite3_stmt* Database::_compile_command(const std::string& command) {
     sqlite3_stmt* result;
 
     if (sqlite3_prepare_v3(_handle, command.c_str(), -1, 0, &result, nullptr)) {
-        Error(sqlite3_errmsg(_handle));
+        _Error(sqlite3_errmsg(_handle));
         sqlite3_finalize(result);
         return nullptr;
     }
@@ -58,7 +58,7 @@ void Database::_get_rows(const std::string& command, std::function<void(sqlite3_
     }
 
     if (code != SQLITE_DONE) {
-        Error(sqlite3_errmsg(_handle));
+        _Error(sqlite3_errmsg(_handle));
     }
 
     sqlite3_finalize(stmt);

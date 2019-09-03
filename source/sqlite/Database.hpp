@@ -12,12 +12,9 @@
 
 #include "sqlite3.h"
 
-#include "boost/core/demangle.hpp"
-
+#include "Result.hpp"
 #include "Column.hpp"
 #include "Mappable.hpp"
-
-using namespace boost::core;
 
 namespace sql {
 
@@ -38,6 +35,9 @@ namespace sql {
 
         template<class T>
         std::vector<T> get_all();
+
+        template<class T>
+        T where(std::function<void(T&)>);
 
         template<class T>
         std::string dump_all();
@@ -97,8 +97,15 @@ namespace sql {
     }
 
     template<class T>
+    T Database::where(std::function<void(T&)> edit) {
+        auto object = T::empty();
+        edit(object);
+        Info(object.edited_field());
+    }
+
+    template<class T>
     std::string Database::dump_all() {
-        std::string result;
+        std::string result = "\n";
 
         _get_rows(T::select_command(), [&](auto stmt) {
 
@@ -108,6 +115,7 @@ namespace sql {
                           sqlite3_column_name(stmt, i) + " : " +
                           reinterpret_cast<const char*>(sqlite3_column_text(stmt, i)) + "\n";
             }
+            result += "============================\n";
         });
 
         return result;
