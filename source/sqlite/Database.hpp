@@ -13,8 +13,8 @@
 #include "sqlite3.h"
 
 #include "Value.hpp"
-#include "Result.hpp"
 #include "Column.hpp"
+#include "Result.hpp"
 #include "Mappable.hpp"
 
 namespace sql {
@@ -56,16 +56,12 @@ namespace sql {
         }
 
         template<class T>
-        T where(std::function<void(T&)> edit) {
+        cu::Result<T> where(std::function<void(T&)> edit) {
             auto empty = T::empty();
             edit(empty);
-            auto field_name = empty.edited_field();
-            auto value = empty.template get<mapping::Value>(field_name).to_string();
-            Log(empty.select_where_command());
-            T result;
+            cu::Result<T> result;
             _get_rows(empty.select_where_command(), [&](auto stmt) {
                 result = _parse_row<T>(stmt);
-                Log(result.to_json());
             });
             return result;
         }
@@ -93,8 +89,8 @@ namespace sql {
         void _get_rows(const std::string& command, std::function<void(sqlite3_stmt*)> row);
 
         template<class T>
-        std::map<std::string, Column>& _columns() {
-
+        std::map<std::string, Column>& _columns()
+        {
             static std::map<std::string, Column> result;
             static bool retrieved = false;
 
@@ -140,9 +136,9 @@ namespace sql {
             auto columns = _columns<T>();
             T::iterate_properties([&](auto property) {
                 if (columns.find(property.name) == columns.end()) {
-                    throw std::string() +
+                    throw std::runtime_error(
                           "Invalid table for: " + T::class_name() +
-                          " missing property: " + property.name;
+                          " missing property: " + property.name);
                 }
                 columns[property.name].set_property(object, property, stmt);
             });

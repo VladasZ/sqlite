@@ -51,9 +51,13 @@ sqlite3_stmt* Database::_compile_command(const std::string& command) {
 void Database::_get_rows(const std::string& command, std::function<void(sqlite3_stmt*)> row) {
     auto stmt = _compile_command(command);
 
-    int code = 0;
+    int code;
 
-    while ((code = sqlite3_step(stmt)) == SQLITE_ROW) {
+    while (true) {
+        code = sqlite3_step(stmt);
+        if (code != SQLITE_ROW) {
+            break;
+        }
         row(stmt);
     }
 
