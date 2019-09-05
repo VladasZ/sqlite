@@ -32,7 +32,7 @@ namespace sql {
     public:
 
         template<class T>
-        void add(const T& object) {
+        std::string insert(const T& object) {
             static_assert(mapping::is_mappable<T>,
                           "Adding class must be derived from mapping::Mappable<T> class");
 
@@ -43,7 +43,7 @@ namespace sql {
                 _register_class<T>();
             }
 
-            _execute_command(object.insert_command());
+            return _execute_command(object.insert_command());
         }
 
         template<class T>
@@ -51,6 +51,15 @@ namespace sql {
             std::vector<T> result;
             _get_rows(T::select_command(), [&](auto stmt) {
                 result.push_back(_parse_row<T>(stmt));
+            });
+            return result;
+        }
+
+        template<class T>
+        cu::Result<T> get(const T& object) {
+            cu::Result<T> result;
+            _get_rows(object.select_command(), [&](auto stmt) {
+                result = _parse_row<T>(stmt);
             });
             return result;
         }
@@ -67,10 +76,23 @@ namespace sql {
         }
 
         template<class T>
+        void update(const T& object) {
+            auto error = _execute_command(object.update_command());
+            if (error.empty()) {
+                return;
+            }
+            throw std::runtime_error(
+                    "Failed to update object of class " + T::class_name() + "\n" +
+                    "Error: " + error + "\n" +
+                    "Object data:" + "\n" +
+                    object.to_json()
+                    );
+        }
+
+        template<class T>
         std::string dump_all() {
             std::string result = "\n";
-
-            _get_rows(T::select_command(), [&](auto stmt) {
+            _get_rows(T::select_all_command(), [&](auto stmt) {
                 for (unsigned i = 0; i < sqlite3_data_count(stmt); i++) {
                     result += std::string() +
                               sqlite3_column_name(stmt, i) + " : " +
@@ -78,13 +100,12 @@ namespace sql {
                 }
                 result += "============================\n";
             });
-
             return result;
         }
 
     private:
 
-        void _execute_command(const std::string& command);
+        std::string _execute_command(const std::string& command);
         sqlite3_stmt* _compile_command(const std::string& command);
         void _get_rows(const std::string& command, std::function<void(sqlite3_stmt*)> row);
 
@@ -93,21 +114,16 @@ namespace sql {
         {
             static std::map<std::string, Column> result;
             static bool retrieved = false;
-
-            if (retrieved)
+            if (retrieved) {
                 return result;
-
-            auto stmt = _compile_command(T::select_command());
-
+            }
+            auto stmt = _compile_command(T::select_all_command());
             for (unsigned i = 0; i < sqlite3_column_count(stmt); i++) {
                 auto name = sqlite3_column_name(stmt, i);
                 result[name] = Column(i, name);
             }
-
             sqlite3_finalize(stmt);
-
             retrieved = true;
-
             return result;
         }
 

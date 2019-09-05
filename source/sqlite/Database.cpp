@@ -23,16 +23,14 @@ Database::~Database() {
         sqlite3_close(_handle);
 }
 
-void Database::_execute_command(const std::string& command) {
+std::string Database::_execute_command(const std::string& command) {
     char* error;
     if (sqlite3_exec(_handle, command.c_str(), 0, 0, &error)) {
         _Error(error);
         sqlite3_free(error);
+        return error;
     }
-    else {
-        Log("sucess");
-        Log(command);
-    }
+    return "";
 }
 
 sqlite3_stmt* Database::_compile_command(const std::string& command) {
