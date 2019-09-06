@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.9.2 FATAL_ERROR)
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-    set(BUILD_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
+	include(build/build_tools_generated.cmake)
+	include(${CMAKE_UTILS_PATH})
+	include(${CONAN_BUILD_INFO})
 endif()
-
-include(${BUILD_DIRECTORY}/build_info.cmake)
-include(${BUILD_DIRECTORY}/${BUILD_INFO})
-include(${BUILD_SCRIPT_PATH})
 
 set(CMAKE_CXX_STANDARD 17)
 
