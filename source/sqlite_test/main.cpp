@@ -5,13 +5,13 @@
 
 #include "sqlite3.h"
 
-#include "Mappable.hpp"
+#include "JSONMappable.hpp"
 
 using namespace std;
 using namespace mapping;
 using namespace sql;
 
-class TestObject : public Mappable<TestObject> {
+class TestObject : public JSONMappable<TestObject> {
 
 public:
 

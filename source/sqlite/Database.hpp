@@ -12,10 +12,9 @@
 
 #include "sqlite3.h"
 
-#include "Value.hpp"
 #include "Column.hpp"
 #include "Result.hpp"
-#include "Mappable.hpp"
+#include "SQLiteMappable.hpp"
 
 namespace sql {
 
@@ -32,9 +31,7 @@ namespace sql {
     public:
 
         template<class T>
-        std::string insert(const T& object) {
-            static_assert(mapping::is_mappable<T>,
-                          "Adding class must be derived from mapping::Mappable<T> class");
+        std::string insert(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
 
             static bool new_type = true;
 
@@ -47,7 +44,7 @@ namespace sql {
         }
 
         template<class T>
-        std::vector<T> get_all() {
+        std::vector<T> get_all() { static_assert(mapping::is_sqlite_mappable<T>);
             std::vector<T> result;
             _get_rows(T::select_command(), [&](auto stmt) {
                 result.push_back(_parse_row<T>(stmt));
@@ -56,7 +53,7 @@ namespace sql {
         }
 
         template<class T>
-        cu::Result<T> get(const T& object) {
+        cu::Result<T> get(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
             cu::Result<T> result;
             _get_rows(object.select_command(), [&](auto stmt) {
                 result = _parse_row<T>(stmt);
@@ -65,7 +62,7 @@ namespace sql {
         }
 
         template<class T>
-        cu::Result<T> where(std::function<void(T&)> edit) {
+        cu::Result<T> where(std::function<void(T&)> edit) { static_assert(mapping::is_sqlite_mappable<T>);
             auto empty = T::empty();
             edit(empty);
             cu::Result<T> result;
@@ -76,7 +73,7 @@ namespace sql {
         }
 
         template<class T>
-        void update(const T& object) {
+        void update(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
             auto error = _execute_command(object.update_command());
             if (error.empty()) {
                 return;
@@ -90,7 +87,7 @@ namespace sql {
         }
 
         template<class T>
-        std::string dump_all() {
+        std::string dump_all() { static_assert(mapping::is_sqlite_mappable<T>);
             std::string result = "\n";
             _get_rows(T::select_all_command(), [&](auto stmt) {
                 for (unsigned i = 0; i < sqlite3_data_count(stmt); i++) {
@@ -110,8 +107,7 @@ namespace sql {
         void _get_rows(const std::string& command, std::function<void(sqlite3_stmt*)> row);
 
         template<class T>
-        std::map<std::string, Column>& _columns()
-        {
+        std::map<std::string, Column>& _columns() { static_assert(mapping::is_sqlite_mappable<T>);
             static std::map<std::string, Column> result;
             static bool retrieved = false;
             if (retrieved) {
@@ -128,7 +124,7 @@ namespace sql {
         }
 
         template<class T>
-        unsigned _rows_count() {
+        unsigned _rows_count() { static_assert(mapping::is_sqlite_mappable<T>);
             unsigned count;
             std::string command = "select count(*) from " + T::class_name();
 
@@ -142,12 +138,12 @@ namespace sql {
         }
 
         template<class T>
-        void _register_class() {
+        void _register_class() { static_assert(mapping::is_sqlite_mappable<T>);
             _execute_command(T::create_table_command());
         }
 
         template<class T>
-        T _parse_row(sqlite3_stmt* stmt) {
+        T _parse_row(sqlite3_stmt* stmt) { static_assert(mapping::is_sqlite_mappable<T>);
             T object;
             auto columns = _columns<T>();
             T::iterate_properties([&](auto property) {
