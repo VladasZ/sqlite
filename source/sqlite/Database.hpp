@@ -46,7 +46,7 @@ namespace sql {
         template<class T>
         std::vector<T> get_all() { static_assert(mapping::is_sqlite_mappable<T>);
             std::vector<T> result;
-            _get_rows(SQLiteMappable<T>::select_command(), [&](auto stmt) {
+            _get_rows(mapping::SQLiteMappable<T>::select_command(), [&](auto stmt) {
                 result.push_back(_parse_row<T>(stmt));
             });
             return result;
@@ -89,7 +89,7 @@ namespace sql {
         template<class T>
         std::string dump_all() { static_assert(mapping::is_sqlite_mappable<T>);
             std::string result = "\n";
-            _get_rows(SQLiteMappable<T>::select_all_command(), [&](auto stmt) {
+            _get_rows(mapping::SQLiteMappable<T>::select_all_command(), [&](auto stmt) {
                 for (unsigned i = 0; i < sqlite3_data_count(stmt); i++) {
                     result += std::string() +
                               sqlite3_column_name(stmt, i) + " : " +
@@ -114,7 +114,7 @@ namespace sql {
             if (retrieved) {
                 return result;
             }
-            auto stmt = _compile_command(SQLiteMappable<T>::select_all_command());
+            auto stmt = _compile_command(mapping::SQLiteMappable<T>::select_all_command());
             for (unsigned i = 0; i < sqlite3_column_count(stmt); i++) {
                 auto name = sqlite3_column_name(stmt, i);
                 result[name] = Column(i, name);
