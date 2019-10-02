@@ -32,7 +32,7 @@ int Column::integer() const {
 }
 
 float Column::floating() const {
-    return sqlite3_column_double(_stmt, _index);
+    return static_cast<float>(sqlite3_column_double(_stmt, _index));
 }
 
 std::string Column::to_string() const {

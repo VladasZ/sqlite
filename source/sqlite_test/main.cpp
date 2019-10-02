@@ -11,7 +11,8 @@ using namespace std;
 using namespace mapping;
 using namespace sql;
 
-class TestObject : public JSONMappable<TestObject> {
+class TestObject : public mapping::JSONMappable<TestObject>,
+				   public mapping::SQLiteMappable<TestObject> {
 
 public:
 
@@ -21,9 +22,9 @@ public:
 
     static auto properties() {
         return std::make_tuple(
-                PROPERTY(age),
-                PROPERTY(name),
-                PROPERTY(last_name)
+			PROPERTY(age),
+			PRIMARY_KEY(name),
+            PROPERTY(last_name)
         );
     }
 
@@ -43,9 +44,9 @@ int main() {
     seeee.name = "pikul";
     seeee.last_name = "spesel";
 
-    // base.add(seeee);
+    base.insert(seeee);
 
-    // Log(base.dump_all<TestObject>());
+    Log(base.dump_all<TestObject>());
 
     auto cols = base._columns<TestObject>();
 
@@ -55,7 +56,7 @@ int main() {
 
     Log(base.dump_all<TestObject>());
 
-    Log(TestObject::array_to_json(base.get_all<TestObject>()));
+  //  Log(TestObject::array_to_json(base.get_all<TestObject>()));
 
     return 0;
 }
