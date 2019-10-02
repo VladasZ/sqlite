@@ -31,7 +31,7 @@ namespace sql {
     public:
 
         template<class T>
-        std::string insert(const T& object) { //static_assert(mapping::is_sqlite_mappable<T>);
+        std::string insert(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
 
             static bool new_type = true;
 
@@ -43,14 +43,14 @@ namespace sql {
             return _execute_command(object.insert_command());
         }
 
-        //template<class T>
-        //std::vector<T> get_all() {// static_assert(mapping::is_sqlite_mappable<T>);
-        //    std::vector<T> result;
-        //    _get_rows(SQLiteMappable<T>::select_command(), [&](auto stmt) {
-        //        result.push_back(_parse_row<T>(stmt));
-        //    });
-        //    return result;
-        //}
+        template<class T>
+        std::vector<T> get_all() { static_assert(mapping::is_sqlite_mappable<T>);
+            std::vector<T> result;
+            _get_rows(SQLiteMappable<T>::select_command(), [&](auto stmt) {
+                result.push_back(_parse_row<T>(stmt));
+            });
+            return result;
+        }
 
         template<class T>
         cu::Result<T> get(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
@@ -87,7 +87,7 @@ namespace sql {
         }
 
         template<class T>
-        std::string dump_all() {// static_assert(mapping::is_sqlite_mappable<T>);
+        std::string dump_all() { static_assert(mapping::is_sqlite_mappable<T>);
             std::string result = "\n";
             _get_rows(SQLiteMappable<T>::select_all_command(), [&](auto stmt) {
                 for (unsigned i = 0; i < sqlite3_data_count(stmt); i++) {
@@ -108,7 +108,7 @@ namespace sql {
         void _get_rows(const std::string& command, std::function<void(sqlite3_stmt*)> row);
 
         template<class T>
-        std::map<std::string, Column>& _columns() { //static_assert(mapping::is_sqlite_mappable<T>);
+        std::map<std::string, Column>& _columns() { static_assert(mapping::is_sqlite_mappable<T>);
             static std::map<std::string, Column> result;
             static bool retrieved = false;
             if (retrieved) {
