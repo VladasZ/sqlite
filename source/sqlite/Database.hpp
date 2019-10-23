@@ -52,23 +52,20 @@ namespace sql {
             return result;
         }
 
-        template<class T>
-        cu::Result<T> get(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
-            cu::Result<T> result;
-            _get_rows(object.select_command(), [&](auto stmt) {
-                result = _parse_row<T>(stmt);
-            });
-            return result;
-        }
+		//template<class T>
+		//cu::Result<T> get(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
 
-        template<class T>
-        cu::Result<T> get_with_id(const mapping::Value& primary_value) { static_assert(mapping::is_sqlite_mappable<T>);
-            cu::Result<T> result;
-            _get_rows(T::select_command_with_primary_value(primary_value), [&](auto stmt) {
-                result = _parse_row<T>(stmt);
-            });
-            return result;
-        }
+		//	std::string command = "";
+
+		////	if (object.)
+
+
+		//		cu::Result<T> result;
+		//	_get_rows(object.select_command_with_id(), [&](auto stmt) {
+		//		result = _parse_row<T>(stmt);
+		//		});
+		//	return result;
+		//}
 
         template<class T>
         cu::Result<T> where(std::function<void(T&)> edit) { static_assert(mapping::is_sqlite_mappable<T>);

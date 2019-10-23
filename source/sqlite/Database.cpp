@@ -26,8 +26,9 @@ Database::~Database() {
 std::string Database::_execute_command(const std::string& command) {
     char* error;
     if (sqlite3_exec(_handle, command.c_str(), 0, 0, &error)) {
-        _Error(error);
-        sqlite3_free(error);
+		std::string string_error(error);
+		sqlite3_free(error);
+		throw std::runtime_error("Failed to execute database request: " + string_error);
         return error;
     }
     return "";

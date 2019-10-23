@@ -16,14 +16,14 @@ class TestObject : public mapping::JSONMappable<TestObject>,
 
 public:
 
-    int age = 0;
-    std::string name = "";
-    std::string last_name = "";
+	int age;
+    std::string name;
+    std::string last_name;
 
     static auto properties() {
         return std::make_tuple(
 			PROPERTY(age),
-			PRIMARY_KEY(name),
+			PROPERTY(name),
             PROPERTY(last_name)
         );
     }
