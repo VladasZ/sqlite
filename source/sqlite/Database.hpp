@@ -65,7 +65,7 @@ namespace sql {
             }
             else {
                 throw std::runtime_error(std::string() +
-                "Impossible to select object of type: " + T::class_name() + "without id or unique value\n" +
+                "Impossible to select object of type: " + T::class_name() + " without id or unique value\n" +
                 "Object: " + object.to_json());
             }
 
@@ -79,7 +79,6 @@ namespace sql {
         template<class T>
         cu::Result<T> get_with_id(mapping::ID id) { static_assert(mapping::is_sqlite_mappable<T>);
             cu::Result<T> result;
-            Log(T::static_select_command_with_id(id));
             _get_rows(T::static_select_command_with_id(id), [&](auto stmt) {
                 result = _parse_row<T>(stmt);
             });
@@ -87,12 +86,21 @@ namespace sql {
         }
 
         template<class T>
-        cu::Result<T> where(std::function<void(T&)> edit) { static_assert(mapping::is_sqlite_mappable<T>);
+        cu::Result<T> get_last_entry() { static_assert(mapping::is_sqlite_mappable<T>);
+            cu::Result<T> result;
+            _get_rows(T::select_last_entry_command(), [&](auto stmt) {
+                result = _parse_row<T>(stmt);
+            });
+            return result;
+        }
+
+        template<class T, class Array = std::vector<T>>
+        Array where(std::function<void(T&)> edit) { static_assert(mapping::is_sqlite_mappable<T>);
             auto empty = T::empty();
             edit(empty);
-            cu::Result<T> result;
+            Array result;
             _get_rows(empty.select_where_command(), [&](auto stmt) {
-                result = _parse_row<T>(stmt);
+                result.push_back(_parse_row<T>(stmt));
             });
             return result;
         }
@@ -142,7 +150,6 @@ namespace sql {
             auto stmt = _compile_command(mapping::SQLiteMappable<T>::select_all_command());
             for (unsigned i = 0; i < sqlite3_column_count(stmt); i++) {
                 auto name = sqlite3_column_name(stmt, i);
-                Log(name);
                 result[name] = Column(i, name);
             }
             sqlite3_finalize(stmt);
