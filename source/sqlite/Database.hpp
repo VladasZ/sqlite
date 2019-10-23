@@ -52,20 +52,39 @@ namespace sql {
             return result;
         }
 
-		//template<class T>
-		//cu::Result<T> get(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
+        template<class T>
+        cu::Result<T> get(const T& object) { static_assert(mapping::is_sqlite_mappable<T>);
 
-		//	std::string command = "";
+            std::string command = "";
 
-		////	if (object.)
+            if (object.has_id()) {
+                command = object.select_command_with_id();
+            }
+            else if (object.has_unique_value()) {
+                command = object.select_command_with_unique_value();
+            }
+            else {
+                throw std::runtime_error(std::string() +
+                "Impossible to select object of type: " + T::class_name() + "without id or unique value\n" +
+                "Object: " + object.to_json());
+            }
 
+            cu::Result<T> result;
+            _get_rows(command, [&](auto stmt) {
+                result = _parse_row<T>(stmt);
+            });
+            return result;
+        }
 
-		//		cu::Result<T> result;
-		//	_get_rows(object.select_command_with_id(), [&](auto stmt) {
-		//		result = _parse_row<T>(stmt);
-		//		});
-		//	return result;
-		//}
+        template<class T>
+        cu::Result<T> get_with_id(mapping::ID id) { static_assert(mapping::is_sqlite_mappable<T>);
+            cu::Result<T> result;
+            Log(T::static_select_command_with_id(id));
+            _get_rows(T::static_select_command_with_id(id), [&](auto stmt) {
+                result = _parse_row<T>(stmt);
+            });
+            return result;
+        }
 
         template<class T>
         cu::Result<T> where(std::function<void(T&)> edit) { static_assert(mapping::is_sqlite_mappable<T>);
@@ -123,6 +142,7 @@ namespace sql {
             auto stmt = _compile_command(mapping::SQLiteMappable<T>::select_all_command());
             for (unsigned i = 0; i < sqlite3_column_count(stmt); i++) {
                 auto name = sqlite3_column_name(stmt, i);
+                Log(name);
                 result[name] = Column(i, name);
             }
             sqlite3_finalize(stmt);
@@ -161,6 +181,7 @@ namespace sql {
                 }
                 columns[property.name].set_property(object, property, stmt);
             });
+            columns[T::sqlite_id_key].set_id(object, stmt);
             return object;
         }
 

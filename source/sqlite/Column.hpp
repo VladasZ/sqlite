@@ -14,6 +14,7 @@
 #include "sqlite3.h"
 
 #include "Log.hpp"
+#include "SQLiteMappable.hpp"
 
 namespace  sql {
 
@@ -40,10 +41,15 @@ namespace  sql {
         template<class Property, class Object>
         void set_property(Object& object, const Property& property, sqlite3_stmt* stmt);
 
+        template<class Object>
+        void set_id(Object& object, sqlite3_stmt* stmt);
+
     };
 
     template<class Property, class Object>
     void Column::set_property(Object& object, const Property& property, sqlite3_stmt* stmt) {
+
+        static_assert(mapping::is_sqlite_mappable<Object>);
 
         _stmt = stmt;
 
@@ -61,5 +67,12 @@ namespace  sql {
         else {
             Fatal("Invalid property");
         }
+    }
+
+    template<class Object>
+    void Column::set_id(Object& object, sqlite3_stmt* stmt) {
+        static_assert(mapping::is_sqlite_mappable<Object>);
+        _stmt = stmt;
+        object.id = integer();
     }
 }
