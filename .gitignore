@@ -405,3 +405,5 @@ utils/
 
 *.autosave
 *.blend1
+
+conanfile.txt

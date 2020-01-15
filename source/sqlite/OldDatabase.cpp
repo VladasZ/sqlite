@@ -1,5 +1,5 @@
 //
-//  Database.cpp
+//  OldDatabase.cpp
 //  sqlite
 //
 //  Created by Vladas Zakrevskis on 8/27/19.
@@ -7,47 +7,47 @@
 //
 
 #include "Log.hpp"
-#include "Database.hpp"
+#include "OldDatabase.hpp"
 
 using namespace sql;
 using namespace std;
 
-Database::Database(const string& path) : _path(path) {
+
+OldDatabase::OldDatabase(const string& path) : _path(path) {
     if (sqlite3_open(path.c_str(), &_handle)) {
         Fatal(sqlite3_errmsg(_handle))
     }
 }
 
-Database::~Database() {
-    if (_handle)
+OldDatabase::~OldDatabase() {
+    if (_handle) {
         sqlite3_close(_handle);
+    }
 }
 
-std::string Database::_execute_command(const std::string& command) {
+std::string OldDatabase::_execute_command(const std::string& command) {
     char* error;
     if (sqlite3_exec(_handle, command.c_str(), 0, 0, &error)) {
 		std::string string_error(error);
 		sqlite3_free(error);
-		throw std::runtime_error("Failed to execute database request: " + string_error);
-        return error;
+		Fatal("Failed to execute database request: " + string_error);
     }
     return "";
 }
 
-sqlite3_stmt* Database::_compile_command(const std::string& command) {
+sqlite3_stmt* OldDatabase::_compile_command(const std::string& command) {
 
     sqlite3_stmt* result;
 
     if (sqlite3_prepare_v3(_handle, command.c_str(), -1, 0, &result, nullptr)) {
-        _Error(sqlite3_errmsg(_handle));
         sqlite3_finalize(result);
-        return nullptr;
+        Fatal(sqlite3_errmsg(_handle));
     }
 
     return result;
 }
 
-void Database::_get_rows(const std::string& command, std::function<void(sqlite3_stmt*)> row) {
+void OldDatabase::_get_rows(const std::string& command, std::function<void(sqlite3_stmt*)> row) {
     auto stmt = _compile_command(command);
 
     int code;
@@ -60,9 +60,10 @@ void Database::_get_rows(const std::string& command, std::function<void(sqlite3_
         row(stmt);
     }
 
+    sqlite3_finalize(stmt);
+
     if (code != SQLITE_DONE) {
-        _Error(sqlite3_errmsg(_handle));
+        Fatal(sqlite3_errmsg(_handle));
     }
 
-    sqlite3_finalize(stmt);
 }

@@ -58,10 +58,10 @@ namespace  sql {
         if constexpr (Property::is_string) {
             value = string();
         }
-        else if (Property::is_integer) {
+        else if constexpr (Property::is_integer) {
             value = integer();
         }
-        else if (Property::is_float) {
+        else if constexpr (Property::is_float) {
             value = floating();
         }
         else {
