@@ -10,7 +10,7 @@
 
 using namespace sql;
 
-Database::Database(const std::string& name) : name(name), db(name) {
+Database::Database(const std::string& name) : name(name), db(name,  SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE) {
 
 }
 

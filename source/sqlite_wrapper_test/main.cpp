@@ -6,6 +6,7 @@ using namespace std;
 
 int main() {
 
+    Log("sp");
 
     return 0;
 }
