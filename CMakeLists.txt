@@ -4,4 +4,4 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 	include(build/build_tools_generated.cmake)
 endif()
 
-setup_project(sqlite)
+setup_project(sqlite_wrapper)
