@@ -9,11 +9,3 @@
 #include "Database.hpp"
 
 using namespace sql;
-
-Database::Database(const std::string& name) : name(name), db(name,  SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE) {
-
-}
-
-int Database::execute(const std::string& command) {
-    return db.exec(command);
-}
