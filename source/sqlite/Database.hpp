@@ -23,6 +23,7 @@ namespace sql {
 
     public:
 
+        Database() = default;
         constexpr Database(const std::string_view& path) : path(path) {
 
         }
