@@ -172,6 +172,60 @@ namespace mapping {
             return command;
         }
 
+        template <
+                auto pointer,
+                class Pointer = cu::remove_all_t<decltype(pointer)>,
+                class Class = typename cu::pointer_to_member_class<Pointer>::type,
+                class Value = typename cu::pointer_to_member_value<Pointer>::type>
+        static std::string update_where_command(Value value, const Class& object) {
+            static_assert(cu::is_pointer_to_member_v<Pointer>);
+            static auto class_name    = std::string(mapper.template get_class_name<Class>());
+            static auto property_name = std::string(mapper.template get_property_name<pointer>());
+
+            std::string value_string;
+
+            using Info = cu::TypeInfo<Value>;
+
+            if constexpr (Info::is_string || Info::is_c_string) {
+                value_string = std::string() + "\'" + value + "\'";
+            }
+            else {
+                value_string = std::to_string(value);
+            }
+
+            auto command = std::string() + "UPDATE " + class_name + " SET ";
+
+            bool at_least_one_change = false;
+
+            mapper.template iterate_properties<Class>([&](auto property) {
+                using Property = decltype(property);
+                using PropertyValue = typename Property::Value;
+
+                if constexpr (!Property::is_id) {
+                    const static PropertyValue default_value = { };
+                    auto value = property.get_reference(object);
+                    if (value == default_value) return;
+                    command += property.name() + " = " + property.database_value(object) + ", ";
+                    at_least_one_change = true;
+                }
+            });
+
+            if (!at_least_one_change) {
+                throw std::runtime_error("Trying to update database with empty object.");
+            }
+
+            command.pop_back();
+            command.pop_back();
+
+            command += " WHERE " + property_name + "=" + value_string;
+
+#ifdef SQLITE_MAPPER_LOG_COMMANDS
+            Log(command);
+#endif
+
+            return command;
+        }
+
 
         template <class T>
         static T extract(SQLite::Statement& statement) {
