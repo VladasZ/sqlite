@@ -81,14 +81,26 @@ namespace sql {
                   class Pointer = decltype(pointer),
                   class Class = typename cu::pointer_to_member_class<Pointer>::type,
                   class Result = cu::Result<Class>,
-                  class Value,
-                  class Info = cu::TypeInfo<Value>>
-        Result select_where(Value value) {
+                  class Value = typename cu::pointer_to_member_value<Pointer>::type>
+        Result select_first_where(Value value) {
             SQLite::Statement query(db, mapper.template select_where_command<pointer>(value));
             if (query.executeStep()) {
                 return mapper.template extract<Class>(query);
             }
             return { };
+        }
+
+        template <auto pointer,
+                  class Pointer = decltype(pointer),
+                  class Class = typename cu::pointer_to_member_class<Pointer>::type,
+                  class Value = typename cu::pointer_to_member_value<Pointer>::type>
+        auto select_where(Value value) {
+            std::vector<Class> result;
+            SQLite::Statement query(db, mapper.template select_where_command<pointer>(value));
+            while (query.executeStep()) {
+                result.push_back(mapper.template extract<Class>(query));
+            }
+            return result;
         }
 
     private:
