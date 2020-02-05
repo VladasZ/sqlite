@@ -1,6 +1,7 @@
 
 #include "Log.hpp"
 #include "Database.hpp"
+#include "SQLiteMapper.hpp"
 
 using namespace std;
 

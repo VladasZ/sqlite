@@ -51,9 +51,17 @@ namespace sql {
             return result;
         }
 
-        template <auto pointer, class Value, class Result = cu::Result<Value>>
-        Result select_where(const Value& value) {
-            Log(mapper.template select_where_command<pointer>(value));
+        template <auto pointer,
+                  class Pointer = decltype(pointer),
+                  class Class = typename cu::pointer_to_member_class<Pointer>::type,
+                  class Result = cu::Result<Class>,
+                  class Value,
+                  class Info = cu::TypeInfo<Value>>
+        Result select_where(Value value) {
+            SQLite::Statement query(db, mapper.template select_where_command<pointer>(value));
+            if (query.executeStep()) {
+                return mapper.template extract<Class>(query);
+            }
             return Result { };
         }
 

@@ -82,26 +82,16 @@ namespace mapping {
                 class Pointer = cu::remove_all_t<decltype(pointer)>,
                 class Class = typename cu::pointer_to_member_class<Pointer>::type,
                 class Value = typename cu::pointer_to_member_value<Pointer>::type>
-        static std::string select_where_command(const Value& value) {
+        static std::string select_where_command(Value value) {
             static_assert(cu::is_pointer_to_member_v<Pointer>);
-            static std::string class_name = std::string(mapper.template get_class_name<Class>());
-            static std::string property_name = [&] {
-                std::string name;
-                mapper.template iterate_properties<Class>([&](auto property) {
-                    using Property = decltype(property);
-                    using PropertyPointer = typename Property::Pointer;
-                    if constexpr (std::is_same_v<PropertyPointer, Pointer>) {
-                        if constexpr (Property::pointer_to_member == pointer) {
-                            name = std::string(property.name());
-                        }
-                    }
-                });
-                return name;
-            }();
+            static auto class_name    = std::string(mapper.template get_class_name<Class>());
+            static auto property_name = std::string(mapper.template get_property_name<pointer>());
 
             std::string value_string;
 
-            if constexpr (std::is_same_v<std::string, Value>) {
+            using Info = cu::TypeInfo<Value>;
+
+            if constexpr (Info::is_string || Info::is_c_string) {
                 value_string = std::string() + "\'" + value + "\'";
             }
             else {
