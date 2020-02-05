@@ -12,6 +12,8 @@
 
 #include "Mapper.hpp"
 
+#define SQLITE_MAPPER_LOG_COMMANDS
+
 namespace mapping {
 
     class is_sqlite_mapper_cheker_base { };
@@ -34,17 +36,23 @@ namespace mapping {
             mapper.template get_class_info<Class>([&](const auto& class_info) {
                 command += class_info.name;
                 command += " (\n";
-                class_info.iterate_properties([&](const auto& property) {
-                    command += property.name() + " " + property.database_type_name();
-                    if (property.is_unique) {
-                        command += " UNIQUE";
+                class_info.iterate_properties([&](auto property) {
+                    using Property = decltype(property);
+                    if constexpr (!Property::is_id) {
+                        command += property.name() + " " + property.database_type_name();
+                        if (property.is_unique) {
+                            command += " UNIQUE";
+                        }
+                        command += ",\n";
                     }
-                    command += ",\n";
                 });
             });
             command.pop_back();
             command.pop_back();
             command += "\n);";
+#ifdef SQLITE_MAPPER_LOG_COMMANDS
+            Log(command);
+#endif
             return command;
         }
 
@@ -67,16 +75,25 @@ namespace mapping {
             mapper.template get_class_info<T>([&](auto class_info) {
                 class_name = class_info.name;
                 class_info.iterate_properties([&](auto property) {
-                    columns += property.name() + ", ";
-                    values  += property.database_value(obj) + ",";
+                    if constexpr (!property.is_id) {
+                        columns += property.name() + ", ";
+                        values  += property.database_value(obj) + ",";
+                    }
                 });
             });
             columns.pop_back();
             columns.pop_back();
             values.pop_back();
-            return std::string() +
-                   "INSERT INTO " + class_name + " (" + columns + ")\n" +
-                   "VALUES(" + values + ");";
+
+            auto command = std::string() +
+                           "INSERT INTO " + class_name + " (" + columns + ")\n" +
+                           "VALUES(" + values + ");";
+
+#ifdef SQLITE_MAPPER_LOG_COMMANDS
+            Log(command);
+#endif
+
+            return command;
         }
 
         template <
@@ -100,9 +117,15 @@ namespace mapping {
                 value_string = std::to_string(value);
             }
 
-            return std::string() +
-            "SELECT rowid, * FROM " + class_name +
-            " WHERE " + property_name + " = " + value_string + ";";
+            auto command = std::string() +
+                           "SELECT rowid, * FROM " + class_name +
+                           " WHERE " + property_name + " = " + value_string + ";";
+
+#ifdef SQLITE_MAPPER_LOG_COMMANDS
+            Log(command);
+#endif
+
+            return command;
         }
 
         template <class T>
@@ -129,7 +152,11 @@ namespace mapping {
 
         template <class T>
         static std::string select_all_command() {
-            return std::string() + "SELECT rowid, * FROM " + std::string(mapper.template get_class_name<T>());
+            auto command = std::string() + "SELECT rowid, * FROM " + std::string(mapper.template get_class_name<T>());
+#ifdef SQLITE_MAPPER_LOG_COMMANDS
+            Log(command);
+#endif
+            return command;
         }
 
     private:
