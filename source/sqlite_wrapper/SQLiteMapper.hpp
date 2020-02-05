@@ -140,6 +140,39 @@ namespace mapping {
             return command;
         }
 
+        template <
+                auto pointer,
+                class Pointer = cu::remove_all_t<decltype(pointer)>,
+                class Class = typename cu::pointer_to_member_class<Pointer>::type,
+                class Value = typename cu::pointer_to_member_value<Pointer>::type>
+        static std::string delete_where_command(Value value) {
+            static_assert(cu::is_pointer_to_member_v<Pointer>);
+            static auto class_name    = std::string(mapper.template get_class_name<Class>());
+            static auto property_name = std::string(mapper.template get_property_name<pointer>());
+
+            std::string value_string;
+
+            using Info = cu::TypeInfo<Value>;
+
+            if constexpr (Info::is_string || Info::is_c_string) {
+                value_string = std::string() + "\'" + value + "\'";
+            }
+            else {
+                value_string = std::to_string(value);
+            }
+
+            auto command = std::string() +
+                           "DELETE FROM " + class_name +
+                           " WHERE " + property_name + " = " + value_string + ";";
+
+#ifdef SQLITE_MAPPER_LOG_COMMANDS
+            Log(command);
+#endif
+
+            return command;
+        }
+
+
         template <class T>
         static T extract(SQLite::Statement& statement) {
             T result = mapper.template create_empty<T>();

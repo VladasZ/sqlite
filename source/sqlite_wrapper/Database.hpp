@@ -103,6 +103,14 @@ namespace sql {
             return result;
         }
 
+        template <auto pointer,
+                class Pointer = decltype(pointer),
+                class Class = typename cu::pointer_to_member_class<Pointer>::type,
+                class Value = typename cu::pointer_to_member_value<Pointer>::type>
+        auto delete_where(Value value) {
+            execute(mapper.template delete_where_command<pointer>(value));
+        }
+
     private:
 
         void _create_tables() {
