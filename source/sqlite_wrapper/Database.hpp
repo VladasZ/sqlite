@@ -68,6 +68,15 @@ namespace sql {
             });
         }
 
+        template <class Class, class Result = cu::Result<Class>>
+        Result get_last_entry() {
+            SQLite::Statement query(db, mapper.template select_last_command<Class>());
+            if (query.executeStep()) {
+                return mapper.template extract<Class>(query);
+            }
+            return { };
+        }
+
         template <auto pointer,
                   class Pointer = decltype(pointer),
                   class Class = typename cu::pointer_to_member_class<Pointer>::type,
@@ -79,7 +88,7 @@ namespace sql {
             if (query.executeStep()) {
                 return mapper.template extract<Class>(query);
             }
-            return Result { };
+            return { };
         }
 
     private:

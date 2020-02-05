@@ -128,6 +128,18 @@ namespace mapping {
             return command;
         }
 
+        template <class Class>
+        static std::string select_last_command() {
+            static auto class_name = std::string(mapper.template get_class_name<Class>());
+            static auto command = std::string() +
+                    "SELECT rowid, * FROM " + class_name + " ORDER BY rowid DESC LIMIT 1;";
+
+#ifdef SQLITE_MAPPER_LOG_COMMANDS
+            Log(command);
+#endif
+            return command;
+        }
+
         template <class T>
         static T extract(SQLite::Statement& statement) {
             T result = mapper.template create_empty<T>();
