@@ -15,16 +15,18 @@
 
 namespace sql {
 
-    template <auto& mapper>
+    template <auto& _mapper>
     class Database {
 
-        using Mapper = cu::remove_all_t<decltype(mapper)>;
+        using Mapper = cu::remove_all_t<decltype(_mapper)>;
 
         static_assert(mapping::is_sqlite_mapper_v<Mapper>);
 
         const std::string name;
 
     public:
+
+        static constexpr auto mapper = _mapper;
 
         SQLite::Database db;
 
@@ -49,6 +51,20 @@ namespace sql {
                 result.push_back(mapper.template extract<T>(query));
             }
             return result;
+        }
+
+        template <auto& json_mapper>
+        void dump_all() {
+            Mapper::mapper.iterate_classes([&](auto class_info) {
+                using ClassInfo = decltype(class_info);
+                using Class = typename ClassInfo::Class;
+                std::cout << class_info.name << ":" << std::endl;
+                auto all = get_all<Class>();
+                for (auto obj : all) {
+                    std::cout << json_mapper.to_json_string(obj) << std::endl;
+                }
+                std::cout << std::endl;
+            });
         }
 
         template <auto pointer,

@@ -16,14 +16,16 @@ namespace mapping {
 
     class is_sqlite_mapper_cheker_base { };
 
-    template <auto& mapper>
+    template <auto& _mapper>
     class SQLiteMapper : is_sqlite_mapper_cheker_base {
 
-        using Mapper = cu::remove_all_t<decltype(mapper)>;
+        using Mapper = cu::remove_all_t<decltype(_mapper)>;
 
         static_assert(is_mapper_v<Mapper>);
 
     public:
+
+        static constexpr auto mapper = _mapper;
 
         template <class Class>
         static std::string create_table_command() {
@@ -99,7 +101,7 @@ namespace mapping {
             }
 
             return std::string() +
-            "SELECT * FROM " + class_name +
+            "SELECT rowid, * FROM " + class_name +
             " WHERE " + property_name + " = " + value_string + ";";
         }
 
@@ -120,13 +122,14 @@ namespace mapping {
                 else {
                     ref = statement.getColumn(index);
                 }
+                index++;
             });
             return result;
         }
 
         template <class T>
         static std::string select_all_command() {
-            return std::string() + "SELECT * FROM " + std::string(mapper.template get_class_name<T>());
+            return std::string() + "SELECT rowid, * FROM " + std::string(mapper.template get_class_name<T>());
         }
 
     private:
