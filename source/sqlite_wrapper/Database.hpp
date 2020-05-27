@@ -9,9 +9,10 @@
 #pragma once
 
 #include <string>
-#include <source/cpp_utils/Result.hpp>
 
+#include "Result.hpp"
 #include "SQLiteMapper.hpp"
+
 
 namespace sql {
 
