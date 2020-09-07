@@ -51,14 +51,14 @@ namespace mapping {
             command.pop_back();
             command += "\n);";
 #ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log(command);
+            Log << command;
 #endif
             return command;
         }
 
         static std::vector<std::string> create_all_tables_commands() {
             std::vector<std::string> result;
-            mapper.template iterate_classes([&] (auto class_info) {
+            mapper.iterate_classes([&] (auto class_info) {
                 using ClassInfo = decltype(class_info);
                 using Class = typename ClassInfo::Class;
                 result.push_back(create_table_command<Class>());
@@ -90,7 +90,7 @@ namespace mapping {
                            "VALUES(" + values + ");";
 
 #ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log(command);
+            Log << command;
 #endif
 
             return command;
@@ -122,7 +122,7 @@ namespace mapping {
                            " WHERE " + property_name + " = " + value_string + ";";
 
 #ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log(command);
+            Log << command;
 #endif
 
             return command;
@@ -241,8 +241,12 @@ namespace mapping {
                 else if constexpr (Info::is_float) {
                     ref = statement.getColumn(index).getDouble();
                 }
+                else if constexpr (Info::is_integer) {
+                    ref = statement.getColumn(index).getInt();
+                }
                 else {
-                    ref = statement.getColumn(index);
+                    Log << property;
+                    //ref = statement.getColumn(index);
                 }
                 index++;
             });

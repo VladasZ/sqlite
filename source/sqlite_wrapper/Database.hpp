@@ -34,7 +34,7 @@ namespace sql {
     public:
 
         Database(const std::string& name) : name(name), db(name,  SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE) {
-            Log("Opening database: " + name);
+            Log << "Opening database:" << name;
             _create_tables();
         };
 
