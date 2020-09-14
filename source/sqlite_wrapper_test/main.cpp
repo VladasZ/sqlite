@@ -7,7 +7,7 @@ using namespace std;
 
 int main() {
 
-    Log("sp");
+    Log << "sp";
 
     return 0;
 }
