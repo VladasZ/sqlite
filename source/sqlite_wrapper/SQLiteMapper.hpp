@@ -33,20 +33,23 @@ namespace mapping {
         static std::string create_table_command() {
             static_assert(_exists<Class>());
             std::string command = "CREATE TABLE IF NOT EXISTS ";
-            mapper.template get_class_info<Class>([&](const auto& class_info) {
-                command += class_info.name;
-                command += " (\n";
-                class_info.iterate_properties([&](auto property) {
-                    using Property = decltype(property);
-                    if constexpr (!Property::is_id) {
-                        command += property.name() + " " + property.database_type_name();
-                        if (property.is_unique) {
-                            command += " UNIQUE";
-                        }
-                        command += ",\n";
+
+            constexpr auto info = mapper.info<Class>();
+
+            command += info.name;
+            command += " (\n";
+
+            info.iterate_properties([&](auto property) {
+                using Property = decltype(property);
+                if constexpr (!Property::is_id) {
+                    command += property.name() + " " + property.database_type_name();
+                    if (property.is_unique) {
+                        command += " UNIQUE";
                     }
-                });
+                    command += ",\n";
+                }
             });
+
             command.pop_back();
             command.pop_back();
             command += "\n);";
@@ -72,15 +75,17 @@ namespace mapping {
             std::string columns;
             std::string values;
             std::string class_name;
-            mapper.template get_class_info<T>([&](auto class_info) {
-                class_name = class_info.name;
-                class_info.iterate_properties([&](auto property) {
-                    if constexpr (!property.is_id) {
-                        columns += property.name() + ", ";
-                        values  += property.database_value(obj) + ",";
-                    }
-                });
+
+            static constexpr auto info = mapper.info<T>();
+
+            class_name = info.name;
+            info.iterate_properties([&](auto property) {
+                if constexpr (!property.is_id) {
+                    columns += property.name() + ", ";
+                    values += property.database_value(obj) + ",";
+                }
             });
+
             columns.pop_back();
             columns.pop_back();
             values.pop_back();
@@ -103,8 +108,8 @@ namespace mapping {
                 class Value = typename cu::pointer_to_member_value<Pointer>::type>
         static std::string select_where_command(Value value) {
             static_assert(cu::is_pointer_to_member_v<Pointer>);
-            static auto class_name    = std::string(mapper.template get_class_name<Class>());
-            static auto property_name = std::string(mapper.template get_property_name<pointer>());
+            static auto class_name    = std::string(mapper.class_name<Class>());
+            static auto property_name = std::string(mapper.get_property_name<pointer>());
 
             std::string value_string;
 
@@ -233,7 +238,7 @@ namespace mapping {
             int index = 0;
             mapper.template iterate_properties<T>([&](auto property) {
                 using Property = decltype(property);
-                using Info = typename Property::Info;
+                using Info = typename Property::ValueInfo;
                 auto& ref = property.get_reference(result);
                 if constexpr (Info::is_string) {
                     ref = statement.getColumn(index).getString();
