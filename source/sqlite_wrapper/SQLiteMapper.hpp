@@ -16,10 +16,8 @@
 
 namespace mapping {
 
-    class is_sqlite_mapper_cheker_base { };
-
     template <auto& _mapper>
-    class SQLiteMapper : is_sqlite_mapper_cheker_base {
+    class SQLiteMapper {
 
         using Mapper = cu::remove_all_t<decltype(_mapper)>;
 
@@ -42,7 +40,7 @@ namespace mapping {
             info.iterate_properties([&](auto property) {
                 using Property = decltype(property);
                 if constexpr (!Property::is_id) {
-                    command += property.name() + " " + property.database_type_name();
+                    command += property.name() + " " + database_type_name<Property>();
                     if (property.is_unique) {
                         command += " UNIQUE";
                     }
@@ -82,7 +80,7 @@ namespace mapping {
             info.iterate_properties([&](auto property) {
                 if constexpr (!property.is_id) {
                     columns += property.name() + ", ";
-                    values += property.database_value(obj) + ",";
+                    values += database_value<decltype(property)>(obj) + ",";
                 }
             });
 
@@ -103,13 +101,14 @@ namespace mapping {
 
         template <
                 auto pointer,
-                class Pointer = cu::remove_all_t<decltype(pointer)>,
+                class Pointer = decltype(pointer),
                 class Class = typename cu::pointer_to_member_class<Pointer>::type,
                 class Value = typename cu::pointer_to_member_value<Pointer>::type>
         static std::string select_where_command(Value value) {
             static_assert(cu::is_pointer_to_member_v<Pointer>);
-            static auto class_name    = std::string(mapper.class_name<Class>());
-            static auto property_name = std::string(mapper.get_property_name<pointer>());
+
+            auto class_name    = std::string(mapper.class_name<Class>());
+            auto property_name = std::string(mapper.property_name<pointer>());
 
             std::string value_string;
 
@@ -152,8 +151,9 @@ namespace mapping {
                 class Value = typename cu::pointer_to_member_value<Pointer>::type>
         static std::string delete_where_command(Value value) {
             static_assert(cu::is_pointer_to_member_v<Pointer>);
-            static auto class_name    = std::string(mapper.template get_class_name<Class>());
-            static auto property_name = std::string(mapper.template get_property_name<pointer>());
+
+            auto class_name    = std::string(mapper.template get_class_name<Class>());
+            auto property_name = std::string(mapper.template get_property_name<pointer>());
 
             std::string value_string;
 
@@ -184,8 +184,9 @@ namespace mapping {
                 class Value = typename cu::pointer_to_member_value<Pointer>::type>
         static std::string update_where_command(Value value, const Class& object) {
             static_assert(cu::is_pointer_to_member_v<Pointer>);
-            static auto class_name    = std::string(mapper.template get_class_name<Class>());
-            static auto property_name = std::string(mapper.template get_property_name<pointer>());
+
+            auto class_name    = std::string(mapper.template get_class_name<Class>());
+            auto property_name = std::string(mapper.template get_property_name<pointer>());
 
             std::string value_string;
 
@@ -207,8 +208,8 @@ namespace mapping {
                 using PropertyValue = typename Property::Value;
 
                 if constexpr (!Property::is_id) {
-                    const static PropertyValue default_value = { };
-                    auto value = property.get_reference(object);
+                    const PropertyValue default_value = { };
+                    auto value = Property::get_reference(object);
                     if (value == default_value) return;
                     command += property.name() + " = " + property.database_value(object) + ", ";
                     at_least_one_change = true;
@@ -216,7 +217,7 @@ namespace mapping {
             });
 
             if (!at_least_one_change) {
-                throw std::runtime_error("Trying to update database with empty object.");
+                Fatal("Trying to update database with empty object.");
             }
 
             command.pop_back();
@@ -239,7 +240,7 @@ namespace mapping {
             mapper.template iterate_properties<T>([&](auto property) {
                 using Property = decltype(property);
                 using Info = typename Property::ValueInfo;
-                auto& ref = property.get_reference(result);
+                auto& ref = Property::get_reference(result);
                 if constexpr (Info::is_string) {
                     ref = statement.getColumn(index).getString();
                 }
@@ -274,8 +275,40 @@ namespace mapping {
             return mapper.template exists<Class>();
         }
 
+        template <class Property>
+        static std::string database_type_name() {
+            using Info = typename Property::ValueInfo;
+            if constexpr (Info::is_string) {
+                return "TEXT";
+            }
+            else if constexpr (Info::is_float) {
+                return "REAL";
+            }
+            else if constexpr (Info::is_integer) {
+                return "INTEGER";
+            }
+            else {
+                static_assert(false);
+                Fatal("Invalid member: " + Property::static_to_string());
+            }
+        }
+
+        template <class Property, class Object>
+        static std::string database_value(const Object& obj) {
+            using Info = typename Property::ValueInfo;
+            const auto& value = Property::get_reference(obj);
+            if constexpr (Info::is_string) {
+                return value;
+            }
+            else {
+                return std::to_string(value);
+            }
+        }
+
     };
 
-    template <class T> constexpr bool is_sqlite_mapper_v = std::is_base_of_v<is_sqlite_mapper_cheker_base, cu::remove_all_t<T>>;
+    template <class  > struct is_sqlite_mapper : std::false_type { };
+    template <auto& t> struct is_sqlite_mapper<SQLiteMapper<t>> : std::true_type { };
+    template <class T> constexpr bool is_sqlite_mapper_v = is_sqlite_mapper<T>::value;
 
 }

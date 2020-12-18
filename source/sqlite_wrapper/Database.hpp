@@ -125,7 +125,9 @@ namespace sql {
         void _create_tables() {
             auto commands = mapper.create_all_tables_commands();
             for (auto command : commands) {
-                auto result = execute(command);
+                if (execute(command)) {
+                    Fatal(std::string() + "Failed to execute command: " + command);
+                }
             }
         }
 
