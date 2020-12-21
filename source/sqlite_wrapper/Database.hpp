@@ -48,10 +48,10 @@ namespace sql {
 
         template <class T>
         std::vector<T> get_all() {
-            SQLite::Statement query(db, SQLMapper::select_all_command<T>());
+            SQLite::Statement query(db, SQLMapper::template select_all_command<T>());
             std::vector<T> result;
             while (query.executeStep()) {
-                result.push_back(SQLMapper::extract<T>(query));
+                result.push_back(SQLMapper::template extract<T>(query));
             }
             return result;
         }

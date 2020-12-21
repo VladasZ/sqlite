@@ -30,7 +30,7 @@ namespace sql {
         template <class Class>
         static std::string table_properties() {
             std::string command;
-            Mapper::info<Class>().properties([&](auto prop) {
+            Mapper::template info<Class>().template properties([&](auto prop) {
                 using Prop = decltype(prop);
                 using Value = typename Prop::Value;
                 if constexpr (!Prop::is_id && !Prop::ValueInfo::is_custom_type) {
@@ -49,7 +49,7 @@ namespace sql {
             static_assert(_exists<Class>());
             std::string command = "CREATE TABLE IF NOT EXISTS ";
 
-            command += Mapper::info<Class>().name;
+            command += info<Class>().name;
             command += " (\n";
 
             command += table_properties<Class>();
@@ -82,7 +82,7 @@ namespace sql {
 
                     std::string command;
 
-                    Info::properties_of_type<Value>([&](auto prop) {
+                    Info::template properties_of_type<Value>([&](auto prop) {
                         command += prop.foreign_key() + " " + database_type_name<int>();
                         command += ",\n";
                     });
@@ -113,10 +113,8 @@ namespace sql {
             std::string values;
             std::string class_name;
 
-            static constexpr auto info = Mapper::info<T>();
-
-            class_name = info.name;
-            info.properties([&](auto property) {
+            class_name = info<T>().name;
+            info<T>().properties([&](auto property) {
                 if constexpr (!property.is_id) {
                     columns += property.name() + ", ";
                     values += database_value<decltype(property)>(obj) + ",";
@@ -146,8 +144,8 @@ namespace sql {
         static std::string select_where_command(Value value) {
             static_assert(cu::is_pointer_to_member_v<Pointer>);
 
-            auto class_name    = std::string(mapper.class_name<Class>());
-            auto property_name = std::string(mapper.property_name<pointer>());
+            auto class_name    = std::string(mapper.template class_name<Class>());
+            auto property_name = std::string(mapper.template property_name<pointer>());
 
             std::string value_string;
 
@@ -242,7 +240,7 @@ namespace sql {
 
             bool at_least_one_change = false;
 
-            Mapper::properties<Class>([&](auto property) {
+            Mapper::template properties<Class>([&](auto property) {
                 using Property = decltype(property);
                 using PropertyValue = typename Property::Value;
 
@@ -274,9 +272,9 @@ namespace sql {
 
         template <class T>
         static T extract(SQLite::Statement& statement) {
-            T result = Mapper::create_empty<T>();
+            T result = Mapper::template create_empty<T>();
             int index = 0;
-            Mapper::properties<T>([&](auto property) {
+            Mapper::template properties<T>([&](auto property) {
                 using Property = decltype(property);
                 using Info = typename Property::ValueInfo;
                 auto& ref = Property::get_reference(result);
@@ -301,7 +299,7 @@ namespace sql {
 
         template <class T>
         static std::string select_all_command() {
-            auto command = std::string() + "SELECT rowid, * FROM " + std::string(Mapper::class_name<T>());
+            auto command = std::string() + "SELECT rowid, * FROM " + std::string(Mapper::template class_name<T>());
 #ifdef SQLITE_MAPPER_LOG_COMMANDS
             Log << command;
 #endif
@@ -310,9 +308,14 @@ namespace sql {
 
     private:
 
-        template <class Class>
+        template <class T>
         static constexpr bool _exists() {
-            return mapper.template exists<Class>();
+            return mapper.template exists<T>();
+        }
+
+        template <class T>
+        static constexpr auto info() {
+            return mapper.template info<T>();
         }
 
         template <class T>
