@@ -338,7 +338,7 @@ namespace sql {
             using Info = typename Property::ValueInfo;
             const auto& value = Property::get_reference(obj);
             if constexpr (Info::is_string) {
-                return value;
+                return "\"" + value + "\"";
             }
             else {
                 return std::to_string(value);

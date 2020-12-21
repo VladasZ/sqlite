@@ -16,11 +16,13 @@
 namespace sql {
 
 	struct Dog {
+		int id;
 		int age;
 		std::string name;
 	};
 
 	struct Student {
+		int id;
 		int age;
 		std::string name;
 	};
@@ -37,11 +39,13 @@ namespace sql {
 	};
 
 	MAKE_CLASS_INFO(Dog,
+		MAKE_ID_PROPERTY(Dog, id),
 		MAKE_PROPERTY(Dog, age),
 		MAKE_PROPERTY(Dog, name)
 	);
 
 	MAKE_CLASS_INFO(Student,
+		MAKE_ID_PROPERTY(Student, id),
 		MAKE_PROPERTY(Student, age),
 		MAKE_PROPERTY(Student, name)
 	);
