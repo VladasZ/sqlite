@@ -14,14 +14,14 @@
 
 #define SQLITE_MAPPER_LOG_COMMANDS
 
-namespace mapping {
+namespace sql {
 
     template <auto& _mapper>
     class SQLiteMapper {
 
         using Mapper = cu::remove_all_t<decltype(_mapper)>;
 
-        static_assert(is_mapper_v<Mapper>);
+        static_assert(mapping::is_mapper_v<Mapper>);
 
     public:
 
@@ -37,7 +37,7 @@ namespace mapping {
             command += info.name;
             command += " (\n";
 
-            info.iterate_properties([&](auto property) {
+            info.properties([&](auto property) {
                 using Property = decltype(property);
                 if constexpr (!Property::is_id) {
                     command += property.name() + " " + database_type_name<Property>();
@@ -59,7 +59,13 @@ namespace mapping {
 
         static std::vector<std::string> create_all_tables_commands() {
             std::vector<std::string> result;
-            mapper.iterate_classes([&] (auto class_info) {
+
+            mapper.classes_with_custom_members([&](auto class_info) {
+                using ClassInfo = decltype(class_info);
+                using Class = typename ClassInfo::Class;
+            });
+
+            mapper.classes([&] (auto class_info) {
                 using ClassInfo = decltype(class_info);
                 using Class = typename ClassInfo::Class;
                 result.push_back(create_table_command<Class>());
@@ -77,7 +83,7 @@ namespace mapping {
             static constexpr auto info = mapper.info<T>();
 
             class_name = info.name;
-            info.iterate_properties([&](auto property) {
+            info.properties([&](auto property) {
                 if constexpr (!property.is_id) {
                     columns += property.name() + ", ";
                     values += database_value<decltype(property)>(obj) + ",";
@@ -237,7 +243,7 @@ namespace mapping {
         static T extract(SQLite::Statement& statement) {
             T result = mapper.template create_empty<T>();
             int index = 0;
-            mapper.template iterate_properties<T>([&](auto property) {
+            mapper.template properties<T>([&](auto property) {
                 using Property = decltype(property);
                 using Info = typename Property::ValueInfo;
                 auto& ref = Property::get_reference(result);
@@ -251,6 +257,7 @@ namespace mapping {
                     ref = statement.getColumn(index).getInt();
                 }
                 else {
+                   // static_assert(false);
                     Log << property;
                     //ref = statement.getColumn(index);
                 }
@@ -288,7 +295,7 @@ namespace mapping {
                 return "INTEGER";
             }
             else {
-                static_assert(false);
+               // static_assert(false);
                 Fatal("Invalid member: " + Property::static_to_string());
             }
         }

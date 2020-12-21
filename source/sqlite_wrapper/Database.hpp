@@ -21,7 +21,7 @@ namespace sql {
 
         using Mapper = cu::remove_all_t<decltype(_mapper)>;
 
-        static_assert(mapping::is_sqlite_mapper_v<Mapper>);
+        static_assert(is_sqlite_mapper_v<Mapper>);
 
         const std::string name;
 
