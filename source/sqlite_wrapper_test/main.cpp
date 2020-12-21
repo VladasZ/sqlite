@@ -6,7 +6,7 @@
 using namespace std;
 using namespace sql;
 
-static auto base = Database<sql_mapper>("test_base.sqlite");
+static auto base = Database<sql_mapper>("test_base2.sqlite");
 
 int main() {
 

@@ -28,25 +28,32 @@ namespace sql {
         static constexpr auto mapper = _mapper;
 
         template <class Class>
-        static std::string create_table_command() {
-            static_assert(_exists<Class>());
-            std::string command = "CREATE TABLE IF NOT EXISTS ";
-
-            constexpr auto info = mapper.info<Class>();
-
-            command += info.name;
-            command += " (\n";
-
-            info.properties([&](auto property) {
-                using Property = decltype(property);
-                if constexpr (!Property::is_id) {
-                    command += property.name() + " " + database_type_name<Property>();
-                    if (property.is_unique) {
+        static std::string table_properties() {
+            std::string command;
+            Mapper::info<Class>().properties([&](auto prop) {
+                using Prop = decltype(prop);
+                using Value = typename Prop::Value;
+                if constexpr (!Prop::is_id && !Prop::ValueInfo::is_custom_type) {
+                    command += prop.name() + " " + database_type_name<Value>();
+                    if (Prop::is_unique) {
                         command += " UNIQUE";
                     }
                     command += ",\n";
                 }
             });
+            return command;
+        }
+
+        template <class Class>
+        static std::string create_table_command(const std::string& more_fields = "") {
+            static_assert(_exists<Class>());
+            std::string command = "CREATE TABLE IF NOT EXISTS ";
+
+            command += Mapper::info<Class>().name;
+            command += " (\n";
+
+            command += table_properties<Class>();
+            command += more_fields;
 
             command.pop_back();
             command.pop_back();
@@ -59,17 +66,43 @@ namespace sql {
 
         static std::vector<std::string> create_all_tables_commands() {
             std::vector<std::string> result;
+            std::vector<std::string> processed_classes;
 
-            mapper.classes_with_custom_members([&](auto class_info) {
-                using ClassInfo = decltype(class_info);
-                using Class = typename ClassInfo::Class;
+            Mapper::classes_with_custom_members([&](auto class_info) {
+                using Info = decltype(class_info);
+                using Class = typename Info::Class;
+
+                Info::mappable_properties([&](auto prop) {
+                    using Prop = decltype(prop);
+                    using Value = typename Prop::Value;
+
+                    if (cu::array::contains(processed_classes, cu::class_name<Value>())) {
+                        return;
+                    }
+
+                    std::string command;
+
+                    Info::properties_of_type<Value>([&](auto prop) {
+                        command += prop.foreign_key() + " " + database_type_name<int>();
+                        command += ",\n";
+                    });
+     
+                    processed_classes.push_back(cu::class_name<Value>());
+
+                    result.push_back(create_table_command<Value>(command));
+
+                });
             });
 
-            mapper.classes([&] (auto class_info) {
+            Mapper::classes([&] (auto class_info) {
                 using ClassInfo = decltype(class_info);
                 using Class = typename ClassInfo::Class;
+                if (cu::array::contains(processed_classes, cu::class_name<Class>())) {
+                    return;
+                }
                 result.push_back(create_table_command<Class>());
             });
+
             return result;
         }
 
@@ -80,7 +113,7 @@ namespace sql {
             std::string values;
             std::string class_name;
 
-            static constexpr auto info = mapper.info<T>();
+            static constexpr auto info = Mapper::info<T>();
 
             class_name = info.name;
             info.properties([&](auto property) {
@@ -209,7 +242,7 @@ namespace sql {
 
             bool at_least_one_change = false;
 
-            mapper.template iterate_properties<Class>([&](auto property) {
+            Mapper::properties<Class>([&](auto property) {
                 using Property = decltype(property);
                 using PropertyValue = typename Property::Value;
 
@@ -241,9 +274,9 @@ namespace sql {
 
         template <class T>
         static T extract(SQLite::Statement& statement) {
-            T result = mapper.template create_empty<T>();
+            T result = Mapper::create_empty<T>();
             int index = 0;
-            mapper.template properties<T>([&](auto property) {
+            Mapper::properties<T>([&](auto property) {
                 using Property = decltype(property);
                 using Info = typename Property::ValueInfo;
                 auto& ref = Property::get_reference(result);
@@ -282,9 +315,9 @@ namespace sql {
             return mapper.template exists<Class>();
         }
 
-        template <class Property>
+        template <class T>
         static std::string database_type_name() {
-            using Info = typename Property::ValueInfo;
+            using Info = cu::TypeInfo<T>;
             if constexpr (Info::is_string) {
                 return "TEXT";
             }
@@ -296,7 +329,7 @@ namespace sql {
             }
             else {
                // static_assert(false);
-                Fatal("Invalid member: " + Property::static_to_string());
+                Fatal("Invalid member: " + cu::class_name<T>());
             }
         }
 

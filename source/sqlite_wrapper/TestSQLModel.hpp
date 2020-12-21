@@ -15,6 +15,11 @@
 
 namespace sql {
 
+	struct Dog {
+		int age;
+		std::string name;
+	};
+
 	struct Student {
 		int age;
 		std::string name;
@@ -25,21 +30,35 @@ namespace sql {
 		int age;
 		std::string name;
 		Student pet;
+		Student shket;
+		Student lepet;
+		Dog bobik;
+		Dog smogik;
 	};
 
+	MAKE_CLASS_INFO(Dog,
+		MAKE_PROPERTY(Dog, age),
+		MAKE_PROPERTY(Dog, name)
+	);
+
 	MAKE_CLASS_INFO(Student,
-		MAKE_PROPERTY("age",  &Student::age),
-		MAKE_PROPERTY("name", &Student::name)
-		);
+		MAKE_PROPERTY(Student, age),
+		MAKE_PROPERTY(Student, name)
+	);
 
 	MAKE_CLASS_INFO(Teacher,
-		MAKE_ID_PROPERTY(&Teacher::id),
-		MAKE_PROPERTY("age", &Teacher::age),
-		MAKE_PROPERTY("name", &Teacher::name),
-		MAKE_PROPERTY("pet", &Teacher::pet)
+		MAKE_ID_PROPERTY(Teacher, id),
+		MAKE_PROPERTY(Teacher, age),
+		MAKE_PROPERTY(Teacher, name),
+		MAKE_PROPERTY(Teacher, pet),
+		MAKE_PROPERTY(Teacher, shket),
+		MAKE_PROPERTY(Teacher, lepet),
+		MAKE_PROPERTY(Teacher, bobik),
+		MAKE_PROPERTY(Teacher, smogik)
 	);
 
 	MAKE_MAPPER(mapper,
+		InfoOfDog,
 		InfoOfStudent,
 		InfoOfTeacher);
 
