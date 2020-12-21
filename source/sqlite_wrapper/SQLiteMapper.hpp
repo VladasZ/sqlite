@@ -19,11 +19,11 @@ namespace sql {
     template <auto& _mapper>
     class SQLiteMapper {
 
+    public:
+
         using Mapper = cu::remove_all_t<decltype(_mapper)>;
 
         static_assert(mapping::is_mapper_v<Mapper>);
-
-    public:
 
         static constexpr auto mapper = _mapper;
 
@@ -268,9 +268,9 @@ namespace sql {
 
         template <class T>
         static std::string select_all_command() {
-            auto command = std::string() + "SELECT rowid, * FROM " + std::string(mapper.template get_class_name<T>());
+            auto command = std::string() + "SELECT rowid, * FROM " + std::string(Mapper::class_name<T>());
 #ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log(command);
+            Log << command;
 #endif
             return command;
         }

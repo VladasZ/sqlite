@@ -12,5 +12,7 @@ int main() {
 
     Log << "sp";
 
+    base.dump_all<json_mapper>();
+
     return 0;
 }

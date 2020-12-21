@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Mapper.hpp"
+#include "JsonMapper.hpp"
 #include "SQLiteMapper.hpp"
 
 
@@ -42,6 +43,7 @@ namespace sql {
 		InfoOfStudent,
 		InfoOfTeacher);
 
-	static constexpr auto sql_mapper = sql::SQLiteMapper<mapper>();
+	static constexpr auto sql_mapper  = sql::SQLiteMapper<mapper>();
+	static constexpr auto json_mapper = mapping::JSONMapper<mapper>();
 
 }
