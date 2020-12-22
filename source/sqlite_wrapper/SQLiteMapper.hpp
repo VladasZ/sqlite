@@ -25,17 +25,18 @@ namespace sql {
 
         static_assert(mapping::is_mapper_v<Mapper>);
 
+        static const bool disable_log = false;
         static constexpr auto mapper = _mapper;
 
         template <class Class>
         static std::string table_properties() {
             std::string command;
-            Mapper::template info<Class>().template properties([&](auto prop) {
+            properties<Class>([&](auto prop) {
                 using Prop = decltype(prop);
                 using Value = typename Prop::Value;
                 if constexpr (!Prop::is_id && !Prop::ValueInfo::is_custom_type) {
                     command += prop.name() + " " + database_type_name<Value>();
-                    if (Prop::is_unique) {
+                    if constexpr (Prop::is_unique) {
                         command += " UNIQUE";
                     }
                     command += ",\n";
@@ -49,7 +50,7 @@ namespace sql {
             static_assert(_exists<Class>());
             std::string command = "CREATE TABLE IF NOT EXISTS ";
 
-            command += info<Class>().name;
+            command += class_name<Class>();
             command += " (\n";
 
             command += table_properties<Class>();
@@ -58,9 +59,7 @@ namespace sql {
             command.pop_back();
             command.pop_back();
             command += "\n);";
-#ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log << command;
-#endif
+            Log << cu::log::Off(disable_log) << command;
             return command;
         }
 
@@ -85,23 +84,23 @@ namespace sql {
                     Info::template properties_of_type<Value>([&](auto prop) {
                         command += prop.foreign_key() + " " + database_type_name<int>();
                         command += ",\n";
-                    });
-     
+                        });
+
                     processed_classes.push_back(cu::class_name<Value>());
 
                     result.push_back(create_table_command<Value>(command));
 
+                    });
                 });
-            });
 
-            Mapper::classes([&] (auto class_info) {
+            Mapper::classes([&](auto class_info) {
                 using ClassInfo = decltype(class_info);
                 using Class = typename ClassInfo::Class;
                 if (cu::array::contains(processed_classes, cu::class_name<Class>())) {
                     return;
                 }
                 result.push_back(create_table_command<Class>());
-            });
+                });
 
             return result;
         }
@@ -111,13 +110,11 @@ namespace sql {
             static_assert(_exists<T>());
             std::string columns;
             std::string values;
-            std::string class_name;
 
-            class_name = info<T>().name;
-            info<T>().properties([&](auto property) {
+            properties<T>([&](auto property) {
                 if constexpr (!property.is_id) {
                     columns += property.name() + ", ";
-                    values += database_value<decltype(property)>(obj) + ",";
+                    values += database_value(property.get_reference(obj)) + ",";
                 }
             });
 
@@ -125,156 +122,84 @@ namespace sql {
             columns.pop_back();
             values.pop_back();
 
-            auto command = std::string() +
-                           "INSERT INTO " + class_name + " (" + columns + ")\n" +
-                           "VALUES(" + values + ");";
+            std::string command =
+                "INSERT INTO " + class_name<T>() + " (" + columns + ")\n" +
+                "VALUES(" + values + ");";
 
-#ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log << command;
-#endif
+            Log << cu::log::Off(disable_log) << command;
 
             return command;
         }
 
         template <
-                auto pointer,
-                class Pointer = decltype(pointer),
-                class Class = typename cu::pointer_to_member_class<Pointer>::type,
-                class Value = typename cu::pointer_to_member_value<Pointer>::type>
+            auto pointer,
+            class Pointer = decltype(pointer),
+            class Class = typename cu::pointer_to_member_class<Pointer>::type,
+            class Value = typename cu::pointer_to_member_value<Pointer>::type>
         static std::string select_where_command(Value value) {
-            static_assert(cu::is_pointer_to_member_v<Pointer>);
 
-            auto class_name    = std::string(mapper.template class_name<Class>());
-            auto property_name = std::string(mapper.template property_name<pointer>());
+            std::string command = 
+                "SELECT rowid, * FROM " + class_name<Class>() +
+                " WHERE " + prop_name<pointer>() + " = " + database_value(value) + ";";
 
-            std::string value_string;
-
-            using Info = cu::TypeInfo<Value>;
-
-            if constexpr (Info::is_string || Info::is_c_string) {
-                value_string = std::string() + "\'" + value + "\'";
-            }
-            else {
-                value_string = std::to_string(value);
-            }
-
-            auto command = std::string() +
-                           "SELECT rowid, * FROM " + class_name +
-                           " WHERE " + property_name + " = " + value_string + ";";
-
-#ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log << command;
-#endif
+            Log << cu::log::Off(disable_log) << command;
 
             return command;
         }
 
         template <class Class>
         static std::string select_last_command() {
-            static auto class_name = std::string(mapper.template get_class_name<Class>());
-            static auto command = std::string() +
-                    "SELECT rowid, * FROM " + class_name + " ORDER BY rowid DESC LIMIT 1;";
-
-#ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log(command);
-#endif
+            static std::string command = 
+                "SELECT rowid, * FROM " + class_name<Class>() + " ORDER BY rowid DESC LIMIT 1;";
+            Log << cu::log::Off(disable_log) << command;
             return command;
         }
 
         template <
-                auto pointer,
-                class Pointer = cu::remove_all_t<decltype(pointer)>,
-                class Class = typename cu::pointer_to_member_class<Pointer>::type,
-                class Value = typename cu::pointer_to_member_value<Pointer>::type>
+            auto pointer,
+            class Pointer = cu::remove_all_t<decltype(pointer)>,
+            class Class = typename cu::pointer_to_member_class<Pointer>::type,
+            class Value = typename cu::pointer_to_member_value<Pointer>::type>
         static std::string delete_where_command(Value value) {
-            static_assert(cu::is_pointer_to_member_v<Pointer>);
-
-            auto class_name    = std::string(mapper.template get_class_name<Class>());
-            auto property_name = std::string(mapper.template get_property_name<pointer>());
-
-            std::string value_string;
-
-            using Info = cu::TypeInfo<Value>;
-
-            if constexpr (Info::is_string || Info::is_c_string) {
-                value_string = std::string() + "\'" + value + "\'";
-            }
-            else {
-                value_string = std::to_string(value);
-            }
-
-            auto command = std::string() +
-                           "DELETE FROM " + class_name +
-                           " WHERE " + property_name + " = " + value_string + ";";
-
-#ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log(command);
-#endif
-
+            std::string command = 
+                "DELETE FROM " + class_name<Class>() +
+                " WHERE " + prop_name<pointer>() + " = " + database_value(value) + ";";
+            Log << cu::log::Off(disable_log) << command;
             return command;
         }
 
-        template <
-                auto pointer,
-                class Pointer = cu::remove_all_t<decltype(pointer)>,
-                class Class = typename cu::pointer_to_member_class<Pointer>::type,
-                class Value = typename cu::pointer_to_member_value<Pointer>::type>
-        static std::string update_where_command(Value value, const Class& object) {
-            static_assert(cu::is_pointer_to_member_v<Pointer>);
+         template<class T>
+         static std::string update_command(const T& object) {
 
-            auto class_name    = std::string(mapper.template get_class_name<Class>());
-            auto property_name = std::string(mapper.template get_property_name<pointer>());
+            std::string command = "UPDATE " + class_name<T>() + " SET ";
 
-            std::string value_string;
+            std::string where;
 
-            using Info = cu::TypeInfo<Value>;
-
-            if constexpr (Info::is_string || Info::is_c_string) {
-                value_string = std::string() + "\'" + value + "\'";
-            }
-            else {
-                value_string = std::to_string(value);
-            }
-
-            auto command = std::string() + "UPDATE " + class_name + " SET ";
-
-            bool at_least_one_change = false;
-
-            Mapper::template properties<Class>([&](auto property) {
-                using Property = decltype(property);
-                using PropertyValue = typename Property::Value;
-
-                if constexpr (!Property::is_id) {
-                    const PropertyValue default_value = { };
-                    auto value = Property::get_reference(object);
-                    if (value == default_value) return;
-                    command += property.name() + " = " + property.database_value(object) + ", ";
-                    at_least_one_change = true;
+            properties<T>([&](auto prop) {
+                auto value = database_value(prop.get_reference(object));
+                if constexpr (prop.is_id) {
+                    where = " WHERE " + prop_name(prop) + "=" + value;
+                }
+                else {
+                    command += prop.name() + " = " + value + ", ";
                 }
             });
 
-            if (!at_least_one_change) {
-                Fatal("Trying to update database with empty object.");
-            }
-
             command.pop_back();
             command.pop_back();
 
-            command += " WHERE " + property_name + "=" + value_string;
+            command += where;
 
-#ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log(command);
-#endif
+            Log << cu::log::Off(disable_log) << command;
 
             return command;
         }
-
 
         template <class T>
         static T extract(SQLite::Statement& statement) {
             T result = Mapper::template create_empty<T>();
             int index = 0;
-            Mapper::template properties<T>([&](auto property) {
+            properties<T>([&](auto property) {
                 using Property = decltype(property);
                 using Info = typename Property::ValueInfo;
                 auto& ref = Property::get_reference(result);
@@ -288,34 +213,55 @@ namespace sql {
                     ref = statement.getColumn(index).getInt();
                 }
                 else {
-                   // static_assert(false);
+                    // static_assert(false);
                     Log << property;
                     //ref = statement.getColumn(index);
                 }
                 index++;
-            });
+                });
             return result;
         }
 
         template <class T>
         static std::string select_all_command() {
-            auto command = std::string() + "SELECT rowid, * FROM " + std::string(Mapper::template class_name<T>());
-#ifdef SQLITE_MAPPER_LOG_COMMANDS
-            Log << command;
-#endif
+            std::string command = "SELECT rowid, * FROM " + class_name<T>();
+            Log << cu::log::Off(disable_log) << command;
             return command;
         }
 
     private:
 
         template <class T>
-        static constexpr bool _exists() {
-            return mapper.template exists<T>();
+        static constexpr bool _exists() { return mapper.template exists<T>(); }
+
+        template <class T>
+        static constexpr auto info() { return mapper.template info<T>(); }
+
+        template <class T, class A>
+        static constexpr void properties(A a) { info<T>().properties(a); }
+
+        template <class T>
+        static auto class_name() { return std::string(info<T>().name); }
+
+        template <auto pointer>
+        static std::string prop_name() {
+            constexpr auto p = mapper.template property<pointer>();
+            if constexpr (p.is_id) {
+                return "rowid";
+            }
+            else {
+                return std::string(p.name());
+            }
         }
 
         template <class T>
-        static constexpr auto info() {
-            return mapper.template info<T>();
+        static std::string prop_name(T prop) {
+            if constexpr (T::is_id) {
+                return "rowid";
+            }
+            else {
+                return std::string(prop.name());
+            }
         }
 
         template <class T>
@@ -336,12 +282,11 @@ namespace sql {
             }
         }
 
-        template <class Property, class Object>
-        static std::string database_value(const Object& obj) {
-            using Info = typename Property::ValueInfo;
-            const auto& value = Property::get_reference(obj);
+        template <class T>
+        static std::string database_value(const T& value) {
+            using Info = cu::TypeInfo<T>;
             if constexpr (Info::is_string) {
-                return "\"" + value + "\"";
+                return "\'" + value + "\'";
             }
             else {
                 return std::to_string(value);
