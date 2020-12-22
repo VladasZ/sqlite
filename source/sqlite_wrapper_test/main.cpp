@@ -20,6 +20,10 @@ void test() {
 
     base.dump_all<json_mapper>();
 
+    Teacher tech;
+
+
+
     Student student = base.select_first_where<&Student::age>(100);
 
 

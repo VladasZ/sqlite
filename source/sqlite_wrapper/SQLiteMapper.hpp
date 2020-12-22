@@ -75,23 +75,23 @@ namespace sql {
                     using Prop = decltype(prop);
                     using Value = typename Prop::Value;
 
-                    if (cu::array::contains(processed_classes, cu::class_name<Value>())) {
-                        return;
-                    }
+                    //if (cu::array::contains(processed_classes, cu::class_name<Value>())) {
+                    //    return;
+                    //}
 
-                    std::string command;
+                    //std::string command;
 
-                    Info::template properties_of_type<Value>([&](auto prop) {
-                        command += prop.foreign_key() + " " + database_type_name<int>();
-                        command += ",\n";
-                        });
+                    //Info::template properties_of_type<Value>([&](auto prop) {
+                    //    command += prop.foreign_key() + " " + database_type_name<int>();
+                    //    command += ",\n";
+                    //    });
 
-                    processed_classes.push_back(cu::class_name<Value>());
+                    //processed_classes.push_back(cu::class_name<Value>());
 
-                    result.push_back(create_table_command<Value>(command));
+                    //result.push_back(create_table_command<Value>(command));
 
-                    });
                 });
+            });
 
             Mapper::classes([&](auto class_info) {
                 using ClassInfo = decltype(class_info);

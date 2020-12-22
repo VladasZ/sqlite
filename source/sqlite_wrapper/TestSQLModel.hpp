@@ -16,19 +16,19 @@
 namespace sql {
 
 	struct Dog {
-		int id;
+		int id = -1;
 		int age;
 		std::string name;
 	};
 
 	struct Student {
-		int id;
+		int id = -1;
 		int age;
 		std::string name;
 	};
 
 	struct Teacher {
-		int id;
+		int id = -1;
 		int age;
 		std::string name;
 		Student pet;
