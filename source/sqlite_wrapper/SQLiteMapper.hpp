@@ -16,8 +16,10 @@
 
 namespace sql {
 
+    class is_sqlite_mapper_checker_base {};
+
     template <auto& _mapper>
-    class SQLiteMapper {
+    class SQLiteMapper : is_sqlite_mapper_checker_base {
 
     public:
 
@@ -295,8 +297,6 @@ namespace sql {
 
     };
 
-    template <class  > struct is_sqlite_mapper : std::false_type { };
-    template <auto& t> struct is_sqlite_mapper<SQLiteMapper<t>> : std::true_type { };
-    template <class T> constexpr bool is_sqlite_mapper_v = is_sqlite_mapper<T>::value;
+    template <class T> constexpr bool is_sqlite_mapper_v = std::is_base_of_v<is_sqlite_mapper_checker_base, cu::remove_all_t<T>>;
 
 }
