@@ -116,7 +116,7 @@ namespace sql {
             properties<T>([&](auto property) {
                 if constexpr (!property.is_id) {
                     columns += property.name() + ", ";
-                    values += database_value(property.get_reference(obj)) + ",";
+                    values += database_value(property.get_value(obj)) + ",";
                 }
             });
 
@@ -204,15 +204,14 @@ namespace sql {
             properties<T>([&](auto property) {
                 using Property = decltype(property);
                 using Info = typename Property::ValueInfo;
-                auto& ref = Property::get_reference(result);
                 if constexpr (Info::is_string) {
-                    ref = statement.getColumn(index).getString();
+                    Property::set_value(result, statement.getColumn(index).getString());
                 }
                 else if constexpr (Info::is_float) {
-                    ref = statement.getColumn(index).getDouble();
+                    Property::set_value(result, statement.getColumn(index).getDouble());
                 }
                 else if constexpr (Info::is_integer) {
-                    ref = statement.getColumn(index).getInt();
+                    Property::set_value(result, statement.getColumn(index).getInt());
                 }
                 else {
                     // static_assert(false);
@@ -268,7 +267,7 @@ namespace sql {
 
         template <class T>
         static std::string database_type_name() {
-            using Info = cu::TypeInfo<T>;
+            using Info = cu::FullTypeInfo<T>;
             if constexpr (Info::is_string) {
                 return "TEXT";
             }
@@ -286,7 +285,7 @@ namespace sql {
 
         template <class T>
         static std::string database_value(const T& value) {
-            using Info = cu::TypeInfo<T>;
+            using Info = cu::FullTypeInfo<T>;
             if constexpr (Info::is_string) {
                 return "\'" + value + "\'";
             }
